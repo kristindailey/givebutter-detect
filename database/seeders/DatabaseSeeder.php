@@ -15,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // The single demo admin that AutoLoginDemoAdmin logs in on every request.
+        // Idempotent so migrate:fresh --seed and seed:demo can rerun cleanly.
+        User::firstOrCreate(
+            ['email' => User::DEMO_ADMIN_EMAIL],
+            [
+                'name' => 'Demo Admin',
+                // Login is stubbed, so this is never used — the column is just NOT NULL.
+                'password' => 'password',
+            ],
+        );
     }
 }

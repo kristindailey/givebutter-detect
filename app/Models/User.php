@@ -29,6 +29,12 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Email of the seeded demo admin that AutoLoginDemoAdmin logs in on every
+     * request. Auth is stubbed to this single account for the prototype.
+     */
+    public const string DEMO_ADMIN_EMAIL = 'demo@givebutter.test';
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
