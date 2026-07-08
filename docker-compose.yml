@@ -1,0 +1,33 @@
+# Postgres 16 for local development.
+#
+# Reviewer path: `cp .env.example .env` then `docker compose up -d` gives a
+# Postgres on :5432 with the pg_trgm extension enabled by migration. Credentials
+# are read from .env (falling back to the defaults below), and `trust` auth means
+# a blank DB_PASSWORD works out of the box.
+#
+# Note: only one service can own host port 5432. If you already run a local
+# Postgres there, either stop it before `docker compose up`, or set DB_PORT to a
+# free port in .env.
+services:
+    postgres:
+        image: postgres:16
+        container_name: givebutter_detect_pg
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${DB_DATABASE:-givebutter_detect}
+            POSTGRES_USER: ${DB_USERNAME:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+            POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+            - '${DB_PORT:-5432}:5432'
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test:
+                ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-givebutter_detect}']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    pgdata:
