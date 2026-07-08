@@ -1,6 +1,6 @@
 # Givebutter VVP — "Detect" Prototype
 
-> A proactive data-trust layer for agentic CRM. This prototype builds **Detect**: a multi-signal weighted duplicate matcher with a merge preview that shows how giving history recomputes *before* anything commits.
+A proactive data-trust layer for agentic CRM. This prototype builds **Detect**: a multi-signal weighted duplicate matcher with a merge preview that shows how giving history recomputes *before* anything commits.
 
 ---
 
@@ -541,7 +541,7 @@ givebutter-detect/
 │       ├── DemoSeeder.php          # ~2k curated + hero cases
 │       └── BulkSeeder.php          # 100k synthetic
 ├── resources/js/
-│   ├── Pages/
+│   ├── pages/
 │   │   ├── ReviewQueue.tsx
 │   │   └── MergeReview.tsx
 │   ├── components/                 # shadcn/ui (Givebutter-themed)
