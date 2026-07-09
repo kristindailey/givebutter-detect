@@ -555,6 +555,7 @@ givebutter-detect/
 │   │       └── ArchivedScope.php   # hides archived contacts by default
 │   └── Services/
 │       ├── Detection/
+│       │   ├── Normalizer.php           # name/email/phone/address keys (written at seed + detect:run)
 │       │   ├── CandidateGenerator.php   # pg_trgm queries
 │       │   └── PairScorer.php           # weighted signal scoring + household modifier
 │       └── MergeService.php             # shared preview/commit projection

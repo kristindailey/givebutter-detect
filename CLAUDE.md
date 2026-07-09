@@ -37,6 +37,7 @@ Read the following to get the full context of the project:
 ## Database
 
 - Local **PostgreSQL** (`DB_CONNECTION=pgsql`, db `givebutter_detect`); requires the `pg_trgm` extension for trigram fuzzy matching.
+- **Tests run on Postgres too**, against `givebutter_detect_testing` — never SQLite, since `pg_trgm` is the matcher. `Tests\TestCase` creates that database on first run; no manual setup.
 - Prefer Laravel Boost's `database-query` (read-only queries) and `database-schema` (inspect tables) MCP tools over raw SQL in tinker.
 - Never edit the DB by hand — use Laravel migrations for all schema changes.
 
