@@ -31,7 +31,7 @@ Execute the requested action: $ARGUMENTS
 | `load`     | Load a feature spec or inline description                 |
 | `start`    | Begin implementation, create branch                       |
 | `review`   | Check goals met, code quality                             |
-| `test`     | Check for testable logic for server actions and utilities |
+| `test`     | Write Pest tests for trust-critical logic, run the gate   |
 | `explain`  | Document what changed and why                             |
 | `complete` | Commit, push, merge, reset                                |
 
