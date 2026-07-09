@@ -12,9 +12,8 @@
        Body defaults to DM Sans; use font-heading (Poppins) and font-logo
        (Nunito) for the corresponding roles. */
     --font-sans:
-        'DM Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'DM Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --font-body: var(--font-sans);
     --font-heading: 'Poppins', var(--font-sans);
     --font-logo: 'Nunito', var(--font-sans);

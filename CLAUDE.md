@@ -21,13 +21,13 @@ Read the following to get the full context of the project:
 - `npm run build` — production asset build (`npm run build:ssr` for SSR)
 
 ### Quality
-- `composer test` — full suite: config clear, Pint check, PHPStan, Pest tests
+- **`composer ci:check` — the gate.** Vite build, ESLint, Prettier, TypeScript, Pint, PHPStan, Pest. GitHub Actions runs exactly this, and nothing runs it for you (no pre-push hook). Run it before every commit.
+- `composer test` — backend only: config clear, Pint check, PHPStan, Pest. An inner-loop command, **not** the gate — it never touches `resources/`.
 - `php artisan test --compact` — run tests (filter with `--filter=name`)
 - `composer lint` (`vendor/bin/pint --parallel`) — fix PHP formatting; `composer lint:check` to check only
 - `composer types:check` (`phpstan analyse`) — static analysis
-- `npm run lint` / `npm run format` — ESLint + Prettier on `resources/`
+- `npm run lint` / `npm run format` — ESLint + Prettier on `resources/`; `lint:check` / `format:check` to check only
 - `npm run types:check` — TypeScript check (`tsc --noEmit`)
-- `composer ci:check` — full CI gate (JS lint/format/types + `composer test`)
 
 ### Domain (planned — see project-overview.md, not yet implemented)
 - `php artisan detect:run` — batch-score candidate pairs into `duplicate_candidates`
