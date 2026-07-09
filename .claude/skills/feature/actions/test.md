@@ -9,7 +9,10 @@
     - Use model factories and states; seed the hero cases (Jennifer/Jen, parent/child) for scoring assertions
     - Test happy path and error cases
     - Do not write tests just to write them. Use your best judgement
-5. Run the affected tests: `php artisan test --compact --filter={name}`
-6. Run the full backend gate: `composer test` (config clear + Pint + PHPStan + Pest)
-7. If the feature touched `resources/`, also run `npm run types:check` and `npm run build`
+5. Run the affected tests while iterating: `php artisan test --compact --filter={name}`
+6. Run the full gate before reporting: `composer ci:check` — Vite build, ESLint, Prettier, TypeScript, Pint, PHPStan, Pest
+    - This is the **only** command that matches GitHub Actions. `composer test` and `php artisan test` skip the frontend entirely and are not a gate
+    - Nothing runs it automatically; there is no pre-push hook. It must be run before any commit
+    - Never report a feature as passing on the strength of `php artisan test` alone
+7. If it fails, fix the issues and re-run the full gate — do not report partial passes as green
 8. Report which trust-critical paths the new tests cover, and which remain untested
