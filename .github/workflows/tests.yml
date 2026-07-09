@@ -71,13 +71,10 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
-      # Must precede ci:check — Wayfinder generates @/actions and @/routes
-      # during the Vite build, and types:check won't resolve them otherwise.
-      - name: Build Assets
-        run: npm run build
-
       # One definition of "the build passes", shared with local development:
-      # JS lint/format/types, then Pint, PHPStan, and Pest. Spelling the steps
-      # out here instead is how CI silently drifted from `composer test` before.
+      # Vite build, JS lint/format/types, then Pint, PHPStan, and Pest. Spelling
+      # the steps out here instead is how CI drifted from `composer test` before.
+      # The build leads because Wayfinder generates @/actions and @/routes during
+      # it, and types:check can't resolve them otherwise.
       - name: CI Gate
         run: composer ci:check
