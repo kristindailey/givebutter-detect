@@ -6,7 +6,7 @@ Stand up the whole stack end-to-end before any feature code: Laravel + Inertia +
 
 ## Status
 
-In Progress — starter kit scaffolded and DB live; ~half the foundation goals remain (see checkboxes).
+Complete — all 8 foundation goals done and verified. `/health` renders all rows green in the browser. Committed across 5 steps on `feature/foundation`.
 
 ## Goals
 
@@ -17,8 +17,8 @@ In Progress — starter kit scaffolded and DB live; ~half the foundation goals r
 - [x] Wire Givebutter brand tokens into an `@theme` block — **DONE**: added the 6 `--color-brand-*` tokens + `--font-logo`/`--font-heading`/`--font-body` to the `@theme` block and set `--font-sans` to DM Sans (default body font). Swapped the starter's `@fonts`/Bunny Instrument Sans self-hosting for Google Fonts CDN links (Nunito 700/800, Poppins 500/600/700, DM Sans 400–700) in `app.blade.php`; removed the now-dead `bunny()` fonts config from `vite.config.ts`. Verified: tokens compile into CSS, build is clean (no font bundling), types + lint pass. Visual confirmation lands with the /health page.
 - [x] `AutoLoginDemoAdmin` middleware — **DONE**: `AutoLoginDemoAdmin` logs in the seeded demo admin (`User::DEMO_ADMIN_EMAIL`) when no user is authenticated; registered first in the web `append` group so it runs before `HandleInertiaRequests`. Verified via the HTTP kernel: `/` → 302 with `auth()->user()` = `demo@givebutter.test`.
 - [x] Seed demo admin — **DONE**: `DatabaseSeeder` idempotently `firstOrCreate`s the `Demo Admin` (`demo@givebutter.test`); shared email constant on the `User` model. `migrate:fresh --seed` verified.
-- [ ] `/health` Inertia page (DB, `pg_trgm`, hydration, auto-login rows) — **NOT DONE**: no `HealthController`, no `Health.tsx`, no route
-- [ ] One-command setup holds — **PARTIAL**: composer/npm/migrate work, but `db:seed` (`DatabaseSeeder`) creates a generic `Test User`, not the demo admin; needs the demo-admin seed once auth is stubbed
+- [x] `/health` Inertia page (DB, `pg_trgm`, hydration, auto-login rows) — **DONE**: `HealthController` (invokable) runs 3 server checks (DB connection, `pg_trgm`/`unaccent`, demo-admin auth); `health.tsx` renders them as green/red rows plus a client-side hydration row via `useSyncExternalStore`. Branded (cream bg, brand-yellow banner, brand fonts) + brand favicon. Verified in-browser: all 4 rows green, console clean.
+- [x] One-command setup holds — **DONE**: `migrate:fresh --seed` runs clean and seeds the demo admin; `npm run build` + dev server serve `/health` end-to-end.
 
 ### Decisions locked
 - **Postgres:** add `docker-compose.yml` (Postgres 16) for reviewer portability; local PG stays working.
