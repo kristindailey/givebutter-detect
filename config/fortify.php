@@ -105,23 +105,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Rate Limiting
-    |--------------------------------------------------------------------------
-    |
-    | By default, Fortify will throttle logins to five requests per minute for
-    | every email and IP address combination. However, if you would like to
-    | specify a custom rate limiter to call then you may specify it here.
-    |
-    */
-
-    'limiters' => [
-        'login' => 'login',
-        'two-factor' => 'two-factor',
-        'passkeys' => 'passkeys',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Register View Routes
     |--------------------------------------------------------------------------
     |
@@ -135,28 +118,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Passkeys
-    |--------------------------------------------------------------------------
-    |
-    | These settings configure Fortify's passkey (WebAuthn) support.
-    |
-    */
-
-    'passkeys' => [
-        'relying_party_id' => parse_url(config('app.url'), PHP_URL_HOST),
-        'allowed_origins' => [config('app.url')],
-        'user_handle_secret' => env('PASSKEYS_USER_HANDLE_SECRET', config('app.key')),
-        'timeout' => 60000,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     |
     | Auth is stubbed to a seeded demo admin via the AutoLoginDemoAdmin
-    | middleware, so every Fortify feature is disabled here. In production this
-    | sits behind Givebutter's org-scoped auth (see README).
+    | middleware, and FortifyServiceProvider calls Fortify::ignoreRoutes(), so
+    | no Fortify features or routes are active. In production this sits behind
+    | Givebutter's org-scoped auth (see README).
     |
     */
 

@@ -20,6 +20,9 @@ Complete — all 8 foundation goals done and verified. `/health` renders all row
 - [x] `/health` Inertia page (DB, `pg_trgm`, hydration, auto-login rows) — **DONE**: `HealthController` (invokable) runs 3 server checks (DB connection, `pg_trgm`/`unaccent`, demo-admin auth); `health.tsx` renders them as green/red rows plus a client-side hydration row via `useSyncExternalStore`. Branded (cream bg, brand-yellow banner, brand fonts) + brand favicon. Verified in-browser: all 4 rows green, console clean.
 - [x] One-command setup holds — **DONE**: `migrate:fresh --seed` runs clean and seeds the demo admin; `npm run build` + dev server serve `/health` end-to-end.
 
+### Review cleanup (post-review pass)
+`/feature review` found residual dead code from the strip. Full cleanup applied: `FortifyServiceProvider` now calls `Fortify::ignoreRoutes()` — this removed the still-registered core auth routes (`login`, `logout`, `user/confirm-password`) that survived `features => []` and would have referenced an undefined `login` rate limiter (route list now 6 clean routes, no auth). Deleted 8 orphaned components + 4 orphaned hooks; trimmed the dead `limiters`/`passkeys` blocks from `config/fortify.php`, the 2FA/passkey types from `types/auth.ts`, and the dead `sidebarOpen` shared prop (+ `sidebar_state` cookie). Re-verified: all gates green, `/health` still all-green in-browser.
+
 ### Decisions locked
 - **Postgres:** add `docker-compose.yml` (Postgres 16) for reviewer portability; local PG stays working.
 - **Auth strip:** FULL CLEAN STRIP — remove auth pages, settings pages/controllers/routes, passkey + 2FA migrations, and User-model Fortify traits/columns. Leave only `User` + demo admin.
