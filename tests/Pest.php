@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Contact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +45,11 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Contacts are created directly rather than via a factory — factories arrive
+ * with the demo seeder, which is the first thing that needs them.
+ */
+function makeContact(string $firstName = 'Jen', string $lastName = 'Smith'): Contact
 {
-    // ..
+    return Contact::create(['first_name' => $firstName, 'last_name' => $lastName]);
 }
