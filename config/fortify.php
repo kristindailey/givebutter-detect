@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/health',
 
     /*
     |--------------------------------------------------------------------------
@@ -105,23 +105,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Rate Limiting
-    |--------------------------------------------------------------------------
-    |
-    | By default, Fortify will throttle logins to five requests per minute for
-    | every email and IP address combination. However, if you would like to
-    | specify a custom rate limiter to call then you may specify it here.
-    |
-    */
-
-    'limiters' => [
-        'login' => 'login',
-        'two-factor' => 'two-factor',
-        'passkeys' => 'passkeys',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Register View Routes
     |--------------------------------------------------------------------------
     |
@@ -131,47 +114,20 @@ return [
     |
     */
 
-    'views' => true,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Passkeys
-    |--------------------------------------------------------------------------
-    |
-    | These settings configure Fortify's passkey (WebAuthn) support.
-    |
-    */
-
-    'passkeys' => [
-        'relying_party_id' => parse_url(config('app.url'), PHP_URL_HOST),
-        'allowed_origins' => [config('app.url')],
-        'user_handle_secret' => env('PASSKEYS_USER_HANDLE_SECRET', config('app.key')),
-        'timeout' => 60000,
-    ],
+    'views' => false,
 
     /*
     |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     |
-    | Some of the Fortify features are optional. You may disable the features
-    | by removing them from this array. You're free to only remove some of
-    | these features, or you can even remove all of these if you need to.
+    | Auth is stubbed to a seeded demo admin via the AutoLoginDemoAdmin
+    | middleware, and FortifyServiceProvider calls Fortify::ignoreRoutes(), so
+    | no Fortify features or routes are active. In production this sits behind
+    | Givebutter's org-scoped auth (see README).
     |
     */
 
-    'features' => [
-        Features::registration(),
-        Features::resetPasswords(),
-        Features::emailVerification(),
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0
-        ]),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
-    ],
+    'features' => [],
 
 ];

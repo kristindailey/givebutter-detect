@@ -8,10 +8,24 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+    /* Givebutter brand fonts (loaded via Google Fonts in app.blade.php).
+       Body defaults to DM Sans; use font-heading (Poppins) and font-logo
+       (Nunito) for the corresponding roles. */
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'DM Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --font-body: var(--font-sans);
+    --font-heading: 'Poppins', var(--font-sans);
+    --font-logo: 'Nunito', var(--font-sans);
+
+    /* Givebutter brand palette — usable as bg-brand-yellow, text-brand-black, … */
+    --color-brand-yellow: #febf04;
+    --color-brand-black: #1d1d1d;
+    --color-brand-blue: #1430e1;
+    --color-brand-white: #ffffff;
+    --color-brand-purple: #6f57d1;
+    --color-brand-cream: #fff3cc;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
