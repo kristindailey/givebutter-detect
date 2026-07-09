@@ -22,6 +22,24 @@ jobs:
       matrix:
         php-version: ['8.4', '8.5']
 
+    # The suite runs on Postgres, not SQLite — pg_trgm is the matcher. Mirrors
+    # docker-compose.yml: postgres 16, trust auth so a blank DB_PASSWORD works.
+    # Tests\TestCase creates givebutter_detect_testing on first run.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: givebutter_detect
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -32,6 +50,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ matrix.php-version }}
+          extensions: pdo_pgsql, pgsql
           tools: composer:v2
           coverage: xdebug
 
@@ -52,11 +71,13 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
+      # Must precede ci:check — Wayfinder generates @/actions and @/routes
+      # during the Vite build, and types:check won't resolve them otherwise.
       - name: Build Assets
         run: npm run build
 
-      - name: Run Type Analysis
-        run: composer types:check
-
-      - name: Tests
-        run: php artisan test
+      # One definition of "the build passes", shared with local development:
+      # JS lint/format/types, then Pint, PHPStan, and Pest. Spelling the steps
+      # out here instead is how CI silently drifted from `composer test` before.
+      - name: CI Gate
+        run: composer ci:check
