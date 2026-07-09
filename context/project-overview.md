@@ -151,6 +151,8 @@ erDiagram
     CONTACT ||--o{ TRANSACTION : "source of truth"
     HOUSEHOLD ||--o{ HOUSEHOLD_CONTACT : groups
     CONTACT ||--o{ HOUSEHOLD_CONTACT : "member of"
+    CONTACT ||--o{ CONTACT_TAG : "tagged with"
+    TAG ||--o{ CONTACT_TAG : "applied to"
     DUPLICATE_CANDIDATE }o--|| CONTACT : contact_a
     DUPLICATE_CANDIDATE }o--|| CONTACT : contact_b
 
@@ -172,6 +174,8 @@ erDiagram
         string last_donation_amount
         numeric total_contributions "derived"
         date contact_since "derived"
+        text name_key "blocking key"
+        text address_key "blocking key, from primary address"
         timestamp archived_at
         timestamp created_at
         timestamp updated_at
@@ -181,12 +185,14 @@ erDiagram
         bigint contact_id FK
         string type
         string value
+        string normalized_value "blocking key"
     }
     PHONE {
         bigint id PK
         bigint contact_id FK
         string type
         string value
+        string normalized_value "blocking key"
     }
     ADDRESS {
         bigint id PK
@@ -216,6 +222,14 @@ erDiagram
         bigint household_id FK
         bigint contact_id FK
     }
+    TAG {
+        bigint id PK
+        string name "unique"
+    }
+    CONTACT_TAG {
+        bigint contact_id FK
+        bigint tag_id FK
+    }
     TRANSACTION {
         string id PK
         bigint contact_id FK
@@ -231,6 +245,8 @@ erDiagram
         bigint contact_b_id FK
         numeric score "0-100"
         jsonb signal_breakdown
+        string resolution "pending|merged|dismissed"
+        timestamp resolved_at
         timestamp detected_at
     }
 ```
@@ -239,7 +255,9 @@ erDiagram
 
 - `stats` in the API only carries `total_contributions` and `recurring_contributions` (both strings) — there is **no donation count**. We store `total_contributions` as a derived numeric.
 - `contact_since` and `last_donation_amount` are top-level on the contact and are **derived** in this prototype (recomputed from transactions), not free-text.
-- `emails[]` / `phones[]` are `{type, value}` only.
+- `emails[]` / `phones[]` are `{type, value}` only. The `normalized_value` column alongside each is ours, not the API's — it's what the exact-match blocks self-join on.
+- `contacts.name_key` / `contacts.address_key` are likewise prototype-only: precomputed normalized blocking keys, written by the Normalizer during seeding and `detect:run`. Keeping `address_key` on `contacts` (derived from the primary address) means both fuzzy blocks index one table.
+- `tags` are a flat array of strings (max 64 chars each) on the create/update request; the API exposes dedicated add/remove/sync endpoints. Normalized here to `tags` + `contact_tags` so the merge can auto-union them. **Never matched on and never diffed** — they exist only to survive a merge.
 - `AddressResource` fields: `address_1`, `address_2`, `city`, `state`, `zipcode`, `country`, `type`, `is_primary`.
 - Households use `head_contact_id` to mark the head; there is **no per-member relationship label** in the real schema, so the modifier keys off co-membership + head designation, not an invented role.
 - `TRANSACTION.captured_at` (not `created_at`) is the settlement timestamp used for `contact_since`; `refunded_at` / `status` drive the recompute filter.
@@ -247,6 +265,8 @@ erDiagram
 
 ### `duplicate_candidates` (prototype-only)
 Precomputed by the `detect:run` artisan command. `signal_breakdown` is JSON: per-signal score contribution + the matched values, so the UI can render *why* without recomputing.
+
+`resolution` (`pending` → `merged` | `dismissed`) carries the queue state. The Review Queue shows only `pending` rows; a merge marks the pair `merged`, and "Not a duplicate" marks it `dismissed` — **the labeled negative that would train the scoring weights in production.** Resolved rows are kept, not deleted, which is why the pair's relationships must still resolve an archived merge loser.
 
 > **Delivery note:** this table is real and central, but the Review Queue reads it via an **Inertia prop** (the controller queries it and passes ranked pairs into the page) — not a JSON endpoint. See the [Partial API split](#-api-surface): only the two merge actions are exposed as JSON routes; the queue and contact reads ride Inertia. The `detect:run` batch-precompute story is unchanged.
 
@@ -529,7 +549,10 @@ givebutter-detect/
 │   │   ├── Contact.php
 │   │   ├── Household.php
 │   │   ├── Transaction.php
-│   │   └── DuplicateCandidate.php
+│   │   ├── DuplicateCandidate.php
+│   │   ├── Email.php  Phone.php  Address.php  ExternalId.php  Tag.php
+│   │   └── Scopes/
+│   │       └── ArchivedScope.php   # hides archived contacts by default
 │   └── Services/
 │       ├── Detection/
 │       │   ├── CandidateGenerator.php   # pg_trgm queries
@@ -561,7 +584,7 @@ givebutter-detect/
 ## 🚀 Next Steps
 
 1. [ ] Laravel + Inertia + Vite + Postgres scaffold; enable `pg_trgm`; one health-check page (~1 hr)
-2. [ ] Migrations: contacts, emails, phones, addresses, external_ids, households, household_contacts, transactions, duplicate_candidates
+2. [ ] Migrations: contacts, emails, phones, addresses, external_ids, households, household_contacts, tags, contact_tags, transactions, duplicate_candidates
 3. [ ] `AutoLoginDemoAdmin` middleware + seeded demo admin
 4. [ ] `DemoSeeder` — ~2k contacts + the two hero cases (incl. a refunded transaction)
 5. [ ] GIN trigram indexes on normalized name/address keys
