@@ -31,3 +31,6 @@ Eleven migrations and nine models mirroring Givebutter's verified API schema, wi
 
 ### Detection Phase 2 — Scoring & detect:run
 `PairScorer` scores each candidate 0–100 with a `signal_breakdown` and the asymmetric household modifier (dampen/boost/conflict), landing both hero cases (Jennifer/Jen 94, parent/child ~35); `detect:run` batch-scores the set into `duplicate_candidates`.
+
+### MergeService — Shared Preview/Commit Projection
+One `project()` backs both preview and commit, with survivor proposal, three-tier field resolution (scalar picker + gap-fill, array union, derived recompute), and re-point + archive-last in one DB transaction.
