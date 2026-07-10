@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use App\Models\DuplicateCandidate;
+use App\Services\MergeService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +18,8 @@ use Inertia\Response;
  */
 class DuplicateController extends Controller
 {
+    public function __construct(private MergeService $mergeService) {}
+
     /**
      * The Review Queue: pending pairs at or above the review band, highest
      * confidence first, each carrying both contacts' display fields and the
@@ -48,15 +51,27 @@ class DuplicateController extends Controller
     }
 
     /**
-     * Merge Review page. Stubbed to a placeholder for now — the Merge Review
-     * feature fills in the diff, picker, and before/after panel. Kept on this
-     * controller (rather than a new one) per the Merge Review spec, which allows
-     * folding the read into `DuplicateController`.
+     * Merge Review page. Passes both contacts and the system-proposed survivor as
+     * Inertia props for the header + survivor toggle; the diff, union summary, and
+     * before/after panel hydrate client-side from the shared merge-preview
+     * projection. Folded onto this controller per the Merge Review spec.
      */
     public function show(DuplicateCandidate $candidate): Response
     {
+        $candidate->load(['contactA', 'contactB']);
+
+        $survivor = $this->mergeService->proposeSurvivor(
+            $candidate->contactA,
+            $candidate->contactB,
+        );
+
         return Inertia::render('merge-review', [
             'candidateId' => $candidate->id,
+            'proposedSurvivorId' => $survivor->id,
+            'contacts' => [
+                $this->contactSummary($candidate->contactA),
+                $this->contactSummary($candidate->contactB),
+            ],
         ]);
     }
 
