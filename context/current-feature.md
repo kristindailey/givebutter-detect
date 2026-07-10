@@ -28,3 +28,6 @@ Eleven migrations and nine models mirroring Givebutter's verified API schema, wi
 
 ### Detection Phase 1 — Candidate Generation
 `CandidateGenerator` unions five blocking self-joins (exact email/phone, trigram name/address, same household) into canonical deduped pairs, backed by new GIN `gin_trgm_ops` indexes. The household block carries the Jennifer/Jen hero pair the name/email blocks drop.
+
+### Detection Phase 2 — Scoring & detect:run
+`PairScorer` scores each candidate 0–100 with a `signal_breakdown` and the asymmetric household modifier (dampen/boost/conflict), landing both hero cases (Jennifer/Jen 94, parent/child ~35); `detect:run` batch-scores the set into `duplicate_candidates`.
