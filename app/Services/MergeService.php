@@ -39,7 +39,7 @@ class MergeService
      *
      * @var list<string>
      */
-    private const array SCALAR_FIELDS = [
+    public const array SCALAR_FIELDS = [
         'prefix', 'first_name', 'preferred_name', 'middle_name', 'last_name',
         'suffix', 'dob', 'company', 'title', 'primary_email', 'primary_phone',
         'external_id',

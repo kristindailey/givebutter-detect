@@ -49,6 +49,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[ScopedBy([ArchivedScope::class])]
 class Contact extends Model
 {
+    /** A person. The only mergeable type — companies aren't merged. */
+    public const string TYPE_INDIVIDUAL = 'individual';
+
+    /** An organization. */
+    public const string TYPE_COMPANY = 'company';
+
     /**
      * Include archived contacts. Required by the merge flows, which must load a
      * loser that is being (or has been) archived.
