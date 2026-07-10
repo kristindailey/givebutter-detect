@@ -18,7 +18,11 @@ The richer record is kept (Jennifer wins case 1). User can override with a clear
 
 ### Three-tier field resolution
 
-1. **Scalars** — per-field picker, surfaced **only** where the two values actually conflict (identical values are hidden, not decisions). `picks` param carries the user's choices; default = survivor's value.
+1. **Scalars** — surfaced where the two values differ; identical values are hidden (not decisions). Two sub-cases:
+   - **Conflict** (both present, different) → per-field picker (`conflict: true`). `picks` param carries the user's choices; default = survivor's value.
+   - **Gap-fill** (survivor empty, loser has a value) → auto-taken from the loser (`conflict: false`, read-only). Mirrors the arrays' "kept both" rule so a merge **never silently drops the loser's data**. Not a decision, so no picker entry. Fields where only the survivor has a value change nothing and stay hidden.
+
+   Both preview and commit read one `resolveScalars()` helper, so what is previewed is exactly what commits.
 2. **Arrays** — auto-union with dedupe, read-only "kept both." Dedupe keys:
 
    | Array | Dedupe key |
@@ -41,7 +45,7 @@ The richer record is kept (Jennifer wins case 1). User can override with a clear
 
 ```
 MergeService->project(survivor, loser, picks, commit) : {
-  scalars:  { field: { survivor, loser, chosen, conflict: bool } },   // only conflicting fields
+  scalars:  { field: { survivor, loser, chosen, conflict: bool } },   // conflicts (picker) + gap-fills (conflict:false)
   arrays:   { emails:[...], phones:[...], addresses:[...], tags:[...], external_ids:[...] },
   derived:  { total_contributions:{before,after}, contact_since:{before,after}, last_donation_amount:{before,after} }
 }
@@ -55,7 +59,9 @@ Inside a single `DB::transaction`:
 1. Loser gets `archived_at = now()` (soft-delete, mirrors reversible DELETE+restore).
 2. All loser transactions re-point `contact_id` → survivor.
 3. Derived fields recompute on the survivor.
-4. Survivor scalar fields update per `picks`; arrays update per union rules.
+4. Survivor scalar fields update per `picks` (conflicts) and gap-fills (survivor-empty ← loser); arrays update per union rules.
+
+   > **Ordering note:** the loser is archived **last**, not first — its transactions and array rows must move while it is still readable (see Key Gotchas).
 
 ## Files to Create
 
@@ -76,6 +82,7 @@ Pest test against the demo seed:
 - `last_donation_amount` = latest succeeded row.
 - transactions are re-pointed to the survivor (loser has none after commit; loser `archived_at` set).
 - preview (`commit=false`) writes nothing; commit result equals the preview's projected `after` values.
+- gap-fill: a survivor-empty scalar (Jennifer's `preferred_name`) auto-takes the loser's value (Jen's `Jen`) as a read-only fill and carries over on commit.
 
 ## References
 
