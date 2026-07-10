@@ -37,3 +37,6 @@ One `project()` backs both preview and commit, with survivor proposal, three-tie
 
 ### Merge API — Preview/Commit Routes & Dismiss
 Two JSON routes sharing `project()` (dry-run `GET merge-preview`, committing `POST merge`) plus the Inertia `dismiss` action, on the `web` group for the shared session. Server-side picks whitelist and a 409 guard on resolved pairs.
+
+### Review Queue — Screen 1
+Ranked pending pairs (score ≥ review band) as an Inertia prop inside a shared Givebutter `AppShell`, with band badges and why-chips read straight from `signal_breakdown`. Rows link to a stubbed Merge Review route.
