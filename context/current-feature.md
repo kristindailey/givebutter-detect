@@ -25,3 +25,6 @@ Eleven migrations and nine models mirroring Givebutter's verified API schema, wi
 
 ### Seed Data — Curated Demo Set
 `DemoSeeder` builds 2,018 deterministic contacts: two hero cases at stable IDs, seven review-band pairs, and noise that can't reach the Review band. Pulled the `Normalizer` forward and moved the suite onto Postgres, since `pg_trgm` can't be tested on SQLite.
+
+### Detection Phase 1 — Candidate Generation
+`CandidateGenerator` unions five blocking self-joins (exact email/phone, trigram name/address, same household) into canonical deduped pairs, backed by new GIN `gin_trgm_ops` indexes. The household block carries the Jennifer/Jen hero pair the name/email blocks drop.
