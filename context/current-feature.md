@@ -1,34 +1,18 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: Merge API — Preview (dry-run) & Commit
-
-The two JSON API routes — a dry-run `GET /api/contacts/merge-preview` and a committing `POST /api/contacts/merge` sharing one `MergeService->project()` projection — plus the Inertia `dismiss` action for "not a duplicate".
+# Current Feature
+<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
 
 ## Status
-In Progress
+Not Started
 
 ## Goals
 
-- `GET /api/contacts/merge-preview?survivor={id}&loser={id}` — dry run: calls `project(commit=false)`, returns the projection DTO, commits nothing. Powers the before/after panel.
-- `POST /api/contacts/merge` — commit: request `{ survivor_id, loser_id, picks }`; validates both contacts exist, `type = individual`, `survivor_id != loser_id`, picks reference real conflicting scalar fields; calls `project(commit=true)`; sets candidate `resolution='merged'`, `resolved_at=now()`; returns committed projection.
-- `POST /candidates/{candidate}/dismiss` — Inertia action (not JSON): sets `resolution='dismissed'`, `resolved_at=now()`, redirects back to Review Queue. The labeled negative that trains scoring weights in production.
-- Shared projection guarantee: preview and commit call the same `MergeService->project()` — preview == commit by construction.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-**Files to create:**
-- `app/Http/Controllers/MergeController.php` — `preview()` (GET) + `commit()` (POST)
-- `app/Http/Controllers/DuplicateController.php` — `dismiss()` Inertia action
-- `app/Http/Requests/MergeRequest.php` — validation for the commit POST
-- `routes/api.php` — the two JSON routes
-- `routes/web.php` — the dismiss action
-
-**Gotchas:**
-- Merge POST must be idempotent-ish against a stale queue: if the candidate is already resolved, return a clean 409/conflict rather than double-merging.
-- `picks` default to survivor values server-side — never trust the client to send every field.
-- Keep JSON routes free of the `archived` global-scope surprise: loading the loser for merge must see it.
-
-**Testing:** No endpoint-integration tests per the overview — projection/recompute correctness is covered by the MergeService test; the API layer is thin over the tested service.
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
@@ -50,3 +34,6 @@ Eleven migrations and nine models mirroring Givebutter's verified API schema, wi
 
 ### MergeService — Shared Preview/Commit Projection
 One `project()` backs both preview and commit, with survivor proposal, three-tier field resolution (scalar picker + gap-fill, array union, derived recompute), and re-point + archive-last in one DB transaction.
+
+### Merge API — Preview/Commit Routes & Dismiss
+Two JSON routes sharing `project()` (dry-run `GET merge-preview`, committing `POST merge`) plus the Inertia `dismiss` action, on the `web` group for the shared session. Server-side picks whitelist and a 409 guard on resolved pairs.
