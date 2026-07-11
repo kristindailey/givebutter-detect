@@ -127,7 +127,7 @@ function Sidebar() {
                 ))}
             </nav>
 
-            <p className="mt-5 px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <p className="mt-5 px-3 text-sm font-semibold tracking-wide text-muted-foreground">
                 Givebutter Plus
             </p>
             <nav className="mt-1 flex flex-col gap-0.5">
@@ -136,7 +136,7 @@ function Sidebar() {
                 ))}
             </nav>
 
-            <p className="mt-5 px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <p className="mt-5 px-3 text-sm font-semibold tracking-wide text-muted-foreground">
                 Recent &amp; Pinned
             </p>
             <nav className="mt-1 flex flex-col gap-0.5">
