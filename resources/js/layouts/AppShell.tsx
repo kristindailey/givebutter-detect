@@ -50,7 +50,7 @@ const PLUS_NAV: NavItem[] = [
     { label: 'Tasks', icon: SquareCheckBig },
 ];
 
-const RECENT = ['Lettuce Help 2024', 'General Donations', 'Garden Gala'];
+const RECENT = ['Lettuce Help 2026', 'General Donations', 'Garden Gala'];
 
 function SidebarLink({ item }: { item: NavItem }) {
     const Icon = item.icon;
@@ -75,12 +75,7 @@ function TopBar() {
     return (
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 bg-brand-black px-4 text-brand-white">
             <div className="flex items-center gap-2">
-                <span
-                    aria-hidden
-                    className="flex size-8 items-center justify-center rounded-lg bg-brand-yellow font-logo text-lg font-extrabold text-brand-black"
-                >
-                    G
-                </span>
+                <img src="/favicon.svg" alt="" aria-hidden className="size-5" />
                 <span className="font-logo text-xl font-extrabold text-brand-yellow">
                     Givebutter
                 </span>
