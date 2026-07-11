@@ -29,7 +29,7 @@ export function ScoreBadge({
             </span>
             <span
                 className={cn(
-                    'text-xs font-semibold tracking-wide uppercase',
+                    'w-28 text-xs font-semibold tracking-wide uppercase',
                     isAuto ? 'text-brand-black/70' : 'text-brand-blue',
                 )}
             >
