@@ -522,7 +522,7 @@ A single Pest/PHPUnit file, focused on the trust-critical logic — the matcher 
 
 ## 📦 Deliverable
 
-1. **Running repo** — one-command setup: `composer install && npm install && php artisan migrate:fresh --seed && npm run dev` (or a `make demo` wrapper).
+1. **Running repo** — setup: `composer install && npm install && php artisan migrate:fresh --seed && php artisan detect:run && npm run dev` (or a `make demo` wrapper). `detect:run` scores the seeded contacts into the queue as a separate batch step; without it the Review Queue is empty.
 2. **README** — frames the Detect → Score → Gate pitch, lists the two hero cases, and includes the in-scope / deliberately-out-of-scope tables so an interviewer reads scope as *decisions*.
 3. **`php artisan seed:demo`** — resets the curated demo data so the Jennifer/Jen merge can be re-run cleanly after a dry run.
 
@@ -584,19 +584,19 @@ givebutter-detect/
 
 ## 🚀 Next Steps
 
-1. [ ] Laravel + Inertia + Vite + Postgres scaffold; enable `pg_trgm`; one health-check page (~1 hr)
-2. [ ] Migrations: contacts, emails, phones, addresses, external_ids, households, household_contacts, tags, contact_tags, transactions, duplicate_candidates
-3. [ ] `AutoLoginDemoAdmin` middleware + seeded demo admin
-4. [ ] `DemoSeeder` — ~2k contacts + the two hero cases (incl. a refunded transaction)
-5. [ ] GIN trigram indexes on normalized name/address keys
-6. [ ] `CandidateGenerator` (trigram + array-equality candidate pairs)
-7. [ ] `PairScorer` — weighted signal scoring (hand-tuned weights) + household modifier (with `dob`)
-8. [ ] `artisan detect:run` → populate `duplicate_candidates`
-9. [ ] `MergeService` — shared preview/commit projection + recompute rules
-10. [ ] Inertia props for Review Queue + Merge Review reads; JSON API routes for `GET /api/contacts/merge-preview` + `POST /api/contacts/merge`
-11. [ ] Review Queue screen
-12. [ ] Merge Review screen + before/after panel + `contact_since` highlight
-13. [ ] Givebutter brand theming (wire the brand tokens — colors + fonts — into the `@theme` block in `resources/css/app.css`)
-14. [ ] Tests: scoring + recompute on the two hero cases
+1. [x] Laravel + Inertia + Vite + Postgres scaffold; enable `pg_trgm`; one health-check page (~1 hr)
+2. [x] Migrations: contacts, emails, phones, addresses, external_ids, households, household_contacts, tags, contact_tags, transactions, duplicate_candidates
+3. [x] `AutoLoginDemoAdmin` middleware + seeded demo admin
+4. [x] `DemoSeeder` — ~2k contacts + the two hero cases (incl. a refunded transaction)
+5. [x] GIN trigram indexes on normalized name/address keys
+6. [x] `CandidateGenerator` (trigram + array-equality candidate pairs)
+7. [x] `PairScorer` — weighted signal scoring (hand-tuned weights) + household modifier (with `dob`)
+8. [x] `artisan detect:run` → populate `duplicate_candidates`
+9. [x] `MergeService` — shared preview/commit projection + recompute rules
+10. [x] Inertia props for Review Queue + Merge Review reads; JSON API routes for `GET /api/contacts/merge-preview` + `POST /api/contacts/merge`
+11. [x] Review Queue screen
+12. [x] Merge Review screen + before/after panel + `contact_since` highlight
+13. [x] Givebutter brand theming (wire the brand tokens — colors + fonts — into the `@theme` block in `resources/css/app.css`)
+14. [x] Tests: scoring + recompute on the two hero cases
 15. [ ] *(optional / stretch, only if core is done)* `artisan seed:bulk` + capture `EXPLAIN ANALYZE` artifact
-16. [ ] `artisan seed:demo` reset + README
+16. [x] `artisan seed:demo` reset + README
