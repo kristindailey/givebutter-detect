@@ -43,3 +43,6 @@ Ranked pending pairs (score ≥ review band) as an Inertia prop inside a shared 
 
 ### Merge Review — Screen 2
 The single-screen merge over the shared `project()` projection: conflict-only picker, read-only array union, and the before/after panel that flashes `contact_since` correcting itself.
+
+### Merge Guard — Pending Candidate + Archived Rejection
+The commit route would merge any two individual contacts: a null candidate skipped the resolved-pair guard (`$candidate !== null && …`), and nothing rejected a contact a previous merge had archived. Now 404 on an undetected pair, 422 on an archived one, and the client toasts which guard fired. Both guards are needed — pairs are pairwise, so B≈C stays pending after A≈B archives B, and only validation catches a survivor override onto B.
