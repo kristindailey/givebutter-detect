@@ -34,7 +34,22 @@ use Illuminate\Support\Facades\DB;
  */
 class CandidateGenerator
 {
+    /**
+     * The five blocks, unioned, with archived contacts filtered out once at the top
+     * rather than five times inside.
+     *
+     * An archived contact is a merge loser, and it keeps every row the blocks join
+     * on — its emails, its phones, its household membership. Left in, a rerun of
+     * `detect:run` would re-emit the pair that archived it, and the merge guard would
+     * then reject the row it just put back in the queue.
+     *
+     * Filtering at the top costs one PK join per side and holds for any block added
+     * later; pushing it into each block would save nothing measurable, since losers
+     * are rare by construction.
+     */
     private const SQL = <<<'SQL'
+        SELECT pairs.a_id, pairs.b_id
+        FROM (
         -- Exact normalized email
         SELECT ea.contact_id AS a_id, eb.contact_id AS b_id
         FROM emails ea
@@ -84,6 +99,9 @@ class CandidateGenerator
         JOIN household_contacts hb
           ON ha.household_id = hb.household_id
          AND ha.contact_id < hb.contact_id
+        ) AS pairs
+        JOIN contacts ca ON ca.id = pairs.a_id AND ca.archived_at IS NULL
+        JOIN contacts cb ON cb.id = pairs.b_id AND cb.archived_at IS NULL
         SQL;
 
     /**
