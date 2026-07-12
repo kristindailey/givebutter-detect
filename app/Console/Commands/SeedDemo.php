@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Database\Seeders\DemoAdminSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -13,8 +14,11 @@ use Illuminate\Support\Facades\DB;
  * Resets the curated demo data so the Jennifer/Jen merge can be re-run after a
  * dry run, without a full `migrate:fresh --seed`.
  *
- * Clears the domain tables only — the seeded demo admin that `AutoLoginDemoAdmin`
- * resolves on every request survives, so the app stays usable across a reset.
+ * Clears the domain tables only — the demo admin that `AutoLoginDemoAdmin` resolves
+ * on every request is never dropped, so the app stays usable across a reset. It is
+ * seeded here rather than assumed, because this command is the whole seeding story
+ * on the deployed demo: the release runs `migrate --force` and then this, never
+ * `db:seed`, so nothing else would create the user.
  */
 #[Signature('seed:demo {--detect : Rescore the queue afterwards, for a reset in one command} {--force : Run without confirmation in production}')]
 #[Description('Reset the curated demo dataset (hero cases, review-band pairs, and noise)')]
@@ -42,7 +46,7 @@ class SeedDemo extends Command
         'contacts',
     ];
 
-    public function handle(DemoSeeder $seeder): int
+    public function handle(DemoSeeder $seeder, DemoAdminSeeder $adminSeeder): int
     {
         if (! $this->confirmToProceed()) {
             return self::FAILURE;
@@ -55,6 +59,8 @@ class SeedDemo extends Command
                 }
             });
         });
+
+        $this->components->task('Seeding demo admin', fn () => $adminSeeder->setCommand($this)->run());
 
         $this->components->task('Seeding demo data', fn () => $seeder->setCommand($this)->run());
 

@@ -2,6 +2,7 @@
 
 use App\Models\Contact;
 use App\Models\DuplicateCandidate;
+use App\Models\User;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -53,6 +54,26 @@ it('leaves the queue empty without the flag, so detect:run stays a separate batc
     $this->artisan('seed:demo --force')->assertSuccessful();
 
     expect(DuplicateCandidate::count())->toBe(0);
+});
+
+/**
+ * The deployed demo's release command is `migrate --force` then `seed:demo`, never
+ * `db:seed` — so if this command didn't seed the admin, a first deploy would come up
+ * with contacts but no user, `AutoLoginDemoAdmin` would find nothing, and the auth
+ * stub would be silently dead. Nothing in the UI reads `auth.user`, so only `/health`
+ * would have said so.
+ */
+it('seeds the demo admin, so a fresh deploy that never runs db:seed can still authenticate', function () {
+    User::query()->delete();
+
+    $this->artisan('seed:demo --force')->assertSuccessful();
+
+    expect(User::where('email', User::DEMO_ADMIN_EMAIL)->count())->toBe(1);
+
+    // The reset reruns every ten minutes on the deployed demo; it must not pile up admins.
+    $this->artisan('seed:demo --force')->assertSuccessful();
+
+    expect(User::where('email', User::DEMO_ADMIN_EMAIL)->count())->toBe(1);
 });
 
 it('exposes the reset to the app so a live demo can re-run without a terminal', function () {
