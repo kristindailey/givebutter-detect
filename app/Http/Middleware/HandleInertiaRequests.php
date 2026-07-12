@@ -41,6 +41,12 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Drives the AppShell's "Reset demo data" control. Shared rather than
+            // assumed, so turning the flag off hides the button instead of leaving
+            // one that 404s.
+            'demo' => [
+                'resetEnabled' => (bool) config('demo.reset_enabled'),
+            ],
         ];
     }
 }

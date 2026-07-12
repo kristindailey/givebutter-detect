@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Contact;
 use App\Services\Detection\CandidateGenerator;
 use Database\Seeders\DemoSeeder;
 
@@ -51,4 +52,19 @@ it('over-generates on the name trigram block, proving blocking is doing work', f
     $pairs = (new CandidateGenerator)->generate();
 
     expect($pairs->count())->toBeGreaterThan(1000);
+});
+
+it('never generates a pair involving an archived contact', function () {
+    // An archived contact is a merge loser, and archiving does not remove the rows
+    // the blocks join on — it keeps its emails, phones, and household membership.
+    // Left in, a rerun of `detect:run` would re-emit the very pair that archived it.
+    Contact::findOrFail(DemoSeeder::JEN_ID)->archive();
+
+    $pairs = (new CandidateGenerator)->generate();
+
+    $touchesJen = $pairs->contains(
+        fn (array $pair): bool => in_array(DemoSeeder::JEN_ID, [$pair['a_id'], $pair['b_id']], true),
+    );
+
+    expect($touchesJen)->toBeFalse();
 });

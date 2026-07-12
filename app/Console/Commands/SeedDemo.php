@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * Clears the domain tables only — the seeded demo admin that `AutoLoginDemoAdmin`
  * resolves on every request survives, so the app stays usable across a reset.
  */
-#[Signature('seed:demo {--force : Run without confirmation in production}')]
+#[Signature('seed:demo {--detect : Rescore the queue afterwards, for a reset in one command} {--force : Run without confirmation in production}')]
 #[Description('Reset the curated demo dataset (hero cases, review-band pairs, and noise)')]
 class SeedDemo extends Command
 {
@@ -57,6 +57,13 @@ class SeedDemo extends Command
         });
 
         $this->components->task('Seeding demo data', fn () => $seeder->setCommand($this)->run());
+
+        // Opt-in, so the README's two-step first run still shows `detect:run` as the
+        // separate batch job it is. The reset paths — scheduler, in-app button, deploy
+        // release command — want the whole thing in one command instead.
+        if ($this->option('detect')) {
+            $this->call(DetectRun::class);
+        }
 
         $this->newLine();
         $this->components->info(sprintf(

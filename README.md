@@ -54,19 +54,28 @@ composer run dev
 
 Seeding lands the contacts and hero cases; `detect:run` scores them into the queue (it is a separate step, so the queue is empty until it runs). `composer run dev` then runs the app server, queue, and Vite together. Open the app and go to `/duplicates`.
 
+## Re-running the demo
+
+A merge is permanent: the loser is archived and its transactions re-point to the survivor. To put the hero case back, `php artisan seed:demo --detect` resets the dataset and rescores the queue in one command.
+
+**On the deployed demo,** the same reset runs on a schedule **every 10 minutes** and the top bar carries a "Reset demo" button.
+
+The two commands mean deliberately different things. `seed:demo --detect` is *back to zero*. `detect:run` is *rescore the current data*. It refreshes scores and prunes pairs that no longer fire, but a pair you already merged or dismissed keeps that resolution because a dismissal is a labeled negative worth keeping.
+
 ## Commands
 
 | Command | Purpose |
 | ------- | ------- |
 | `composer run dev` | App server, queue, and Vite together |
-| `php artisan detect:run` | Score candidate pairs into `duplicate_candidates` |
-| `php artisan seed:demo` | Reset the curated ~2k demo dataset and hero cases (follow with `detect:run`) |
+| `php artisan detect:run` | Rescore candidate pairs into `duplicate_candidates`, preserving resolutions |
+| `php artisan seed:demo` | Reset the curated ~2k demo dataset and hero cases |
+| `php artisan seed:demo --detect` | The same reset plus a rescore: the full demo reset in one command |
 | `php artisan test --compact` | Run the test suite |
 | `composer ci:check` | The full CI gate: build, lint, format, types, Pint, PHPStan, Pest |
 
 ## Routes
 
-Read screens ride Inertia props. Only the two merge actions are JSON API routes, because that is where the API design is the artifact: a dry-run GET and a committing POST sharing one projection.
+Read screens ride Inertia props. Only the two merge actions are JSON API routes because that is where the API design is the artifact: a dry-run GET and a committing POST sharing one projection.
 
 | Route | Purpose |
 | ----- | ------- |

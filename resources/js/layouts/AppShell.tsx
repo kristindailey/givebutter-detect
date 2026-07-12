@@ -1,3 +1,4 @@
+import { router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     ChevronDown,
@@ -11,6 +12,7 @@ import {
     MessageCircle,
     Plus,
     Receipt,
+    RotateCcw,
     Search,
     Settings,
     ShieldCheck,
@@ -18,8 +20,12 @@ import {
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { reset } from '@/routes/demo';
+import type { SharedData } from '@/types';
 
 // The Givebutter chrome — black top bar + light sidebar — replicated from the
 // real product screenshots (context/screenshots/). It is deliberately BOUNDED:
@@ -71,7 +77,44 @@ function SidebarLink({ item }: { item: NavItem }) {
     );
 }
 
+/**
+ * Restores the seeded dataset so the Jennifer/Jen merge can be run again. Only
+ * rendered on a demo deployment (see `config/demo.php`), which is the one place
+ * a visitor can merge the hero pair and has no terminal to undo it with.
+ */
+function ResetDemoButton() {
+    const [resetting, setResetting] = useState(false);
+
+    const handleReset = () => {
+        setResetting(true);
+
+        router.post(
+            reset().url,
+            {},
+            {
+                onSuccess: () => toast.success('Demo data reset.'),
+                onError: () => toast.error('The demo data could not be reset.'),
+                onFinish: () => setResetting(false),
+            },
+        );
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={handleReset}
+            disabled={resetting}
+            className="hidden items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm disabled:opacity-60 sm:flex"
+        >
+            <RotateCcw className={cn('size-4', resetting && 'animate-spin')} />
+            {resetting ? 'Resetting…' : 'Reset demo'}
+        </button>
+    );
+}
+
 function TopBar() {
+    const { demo } = usePage<SharedData>().props;
+
     return (
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 bg-brand-black px-4 text-brand-white">
             <div className="flex items-center gap-2">
@@ -90,6 +133,7 @@ function TopBar() {
             </div>
 
             <div className="flex items-center gap-2">
+                {demo.resetEnabled && <ResetDemoButton />}
                 <CircleHelp className="size-5 text-white/70" />
                 <span className="hidden items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm sm:flex">
                     <MessageCircle className="size-4" /> Chat
