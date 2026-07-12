@@ -49,3 +49,6 @@ The commit route would merge any two individual contacts: a null candidate skipp
 
 ### Demo Reset — Scheduled Reset, Reset Button, Idempotent detect:run
 `seed:demo --detect` resets the shared demo in one command, fired by a 10-minute schedule (only when someone has touched it) and a flag-gated top-bar button. Building it surfaced two bugs: `detect:run` resurrected merged and dismissed pairs, and a missing `ANALYZE` made the first post-seed run 11.4s instead of 779ms.
+
+### Deploy Readiness — seed:demo on a Fresh Database
+The release runs `migrate --force` + `seed:demo`, which couldn't seed an empty database: Faker was dev-only, and only `DatabaseSeeder` made the demo admin. Faker moves to `require`; a new `DemoAdminSeeder` backs both paths.
