@@ -219,7 +219,7 @@ export default function MergeReview({
 
                     <Panel
                         title="Array fields"
-                        subtitle="Emails, phones, addresses, tags, and external IDs auto-union — both records' values are kept."
+                        subtitle="Emails, phones, addresses, tags, and external IDs auto-union. Both records' values are kept."
                     >
                         {loading || projection === null ? (
                             <Skeleton className="h-16 w-full" />

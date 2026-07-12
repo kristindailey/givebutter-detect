@@ -104,7 +104,7 @@ function ResetDemoButton() {
             type="button"
             onClick={handleReset}
             disabled={resetting}
-            className="hidden items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm disabled:opacity-60 sm:flex"
+            className="mr-5 hidden shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm whitespace-nowrap disabled:opacity-60 sm:flex"
         >
             <RotateCcw className={cn('size-4', resetting && 'animate-spin')} />
             {resetting ? 'Resetting…' : 'Reset demo'}
@@ -116,8 +116,8 @@ function TopBar() {
     const { demo } = usePage<SharedData>().props;
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 bg-brand-black px-4 text-brand-white">
-            <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-4 bg-brand-black px-4 text-brand-white">
+            <div className="flex flex-1 items-center gap-2">
                 <img src="/favicon.svg" alt="" aria-hidden className="size-5" />
                 <span className="font-logo text-xl font-extrabold text-brand-yellow">
                     Givebutter
@@ -132,7 +132,7 @@ function TopBar() {
                 </kbd>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center justify-end gap-2">
                 {demo.resetEnabled && <ResetDemoButton />}
                 <CircleHelp className="size-5 text-white/70" />
                 <span className="hidden items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm sm:flex">
@@ -142,7 +142,7 @@ function TopBar() {
                     <SquareCheckBig className="size-4" /> Tasks
                 </span>
                 <span className="flex size-8 items-center justify-center rounded-full bg-brand-purple text-xs font-semibold text-brand-white">
-                    CS
+                    KD
                 </span>
             </div>
         </header>

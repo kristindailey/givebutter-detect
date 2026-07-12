@@ -164,11 +164,11 @@ function EmptyState() {
                 <ShieldCheck className="size-6" />
             </span>
             <p className="font-heading text-lg font-semibold text-brand-black">
-                No duplicates to review
+                No Duplicates to Review
             </p>
             <p className="max-w-sm text-sm text-muted-foreground">
-                You&apos;re all caught up — every flagged pair has been merged
-                or dismissed.
+                You&apos;re all caught up. Every flagged pair has been merged or
+                dismissed.
             </p>
         </div>
     );
@@ -190,7 +190,7 @@ export default function ReviewQueue({ candidates }: ReviewQueueProps) {
 
                 <div className="mt-6">
                     <p className="mb-3 text-sm text-muted-foreground">
-                        Candidate duplicate pairs, ranked by match confidence.
+                        Possible duplicate contacts ranked by match confidence.
                         Review each pair before merging.
                     </p>
 
