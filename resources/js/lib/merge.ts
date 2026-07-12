@@ -113,8 +113,22 @@ export async function fetchPreview(
     return response.json() as Promise<Projection>;
 }
 
-/** A resolved pair (409) — surfaced so the UI can toast rather than double-merge. */
-export class MergeConflictError extends Error {}
+/**
+ * A guard rejection the server explained: an undetected pair (404), an already-
+ * resolved pair (409), or a contact that can no longer be merged (422 — typically
+ * a stale tab whose contact was merged away elsewhere). The message is the
+ * server's, so the reviewer is told which guard fired instead of a bare failure.
+ */
+export class MergeRejectedError extends Error {}
+
+/**
+ * The statuses whose `message` is copy we wrote for a reviewer to read. Anything
+ * else — a 500, a 419, a `firstOrFail` that lost a race — also carries a
+ * `message`, but one written for a developer ("No query results for model
+ * [App\Models\Contact] 1002."), and Laravel returns it even with debug off. Read
+ * the body only for the guards, so an unplanned failure can't toast internals.
+ */
+const GUARD_STATUSES = [404, 409, 422];
 
 /** Commit — high-trust, so the caller awaits this before toasting (no optimistic UI). */
 export async function commitMerge(
@@ -136,16 +150,16 @@ export async function commitMerge(
         }),
     });
 
-    if (response.status === 409) {
-        const data = (await response.json()) as { message?: string };
-
-        throw new MergeConflictError(
-            data.message ?? 'This pair has already been resolved.',
-        );
-    }
-
     if (!response.ok) {
-        throw new Error('The merge could not be completed.');
+        const data = GUARD_STATUSES.includes(response.status)
+            ? ((await response.json().catch(() => null)) as {
+                  message?: string;
+              } | null)
+            : null;
+
+        throw new MergeRejectedError(
+            data?.message ?? 'The merge could not be completed.',
+        );
     }
 
     return response.json() as Promise<Projection>;

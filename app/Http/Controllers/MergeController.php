@@ -40,17 +40,36 @@ class MergeController extends Controller
 
     /**
      * Commit — merges `loser` into `survivor` inside the service's DB transaction,
-     * then marks the candidate `merged`. Guards against a stale queue: an
-     * already-resolved pair returns 409 rather than double-merging.
+     * then marks the candidate `merged`. Three guards stand in front of the
+     * service, and all three must hold for a merge to be safe:
+     *
+     * 1. `MergeRequest` (upstream, in validation) rejects an archived contact on
+     *    either side — a merge must never re-point transactions onto a record a
+     *    previous merge already soft-deleted.
+     * 2. A pair the detector never flagged returns 404. Merge is only ever the
+     *    resolution of a *detected* duplicate; it is not a general-purpose "fuse
+     *    any two contacts" endpoint.
+     * 3. An already-resolved pair returns 409 rather than double-merging a stale
+     *    queue submit.
      */
     public function commit(MergeRequest $request): JsonResponse
     {
-        $survivor = Contact::withArchived()->whereKey($request->integer('survivor_id'))->firstOrFail();
-        $loser = Contact::withArchived()->whereKey($request->integer('loser_id'))->firstOrFail();
+        // Left under `ArchivedScope` (unlike `preview`, which reads archived pairs
+        // deliberately): `MergeRequest` has already rejected an archived contact on
+        // either side, so there is nothing here for `withArchived()` to rescue.
+        $survivor = Contact::query()->whereKey($request->integer('survivor_id'))->firstOrFail();
+        $loser = Contact::query()->whereKey($request->integer('loser_id'))->firstOrFail();
 
         $candidate = $this->candidateFor($survivor, $loser);
 
-        if ($candidate !== null && $candidate->resolution !== DuplicateCandidate::RESOLUTION_PENDING) {
+        if ($candidate === null) {
+            return response()->json(
+                ['message' => 'No duplicate candidate exists for this pair.'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        if ($candidate->resolution !== DuplicateCandidate::RESOLUTION_PENDING) {
             return response()->json(
                 ['message' => 'This pair has already been resolved.'],
                 Response::HTTP_CONFLICT,
@@ -59,7 +78,7 @@ class MergeController extends Controller
 
         $projection = $this->mergeService->project($survivor, $loser, $request->picks(), commit: true);
 
-        $candidate?->markMerged();
+        $candidate->markMerged();
 
         return response()->json($projection);
     }

@@ -11,7 +11,7 @@ import type { ToggleContact } from '@/components/SurvivorToggle';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppShell from '@/layouts/AppShell';
-import { commitMerge, fetchPreview, MergeConflictError } from '@/lib/merge';
+import { commitMerge, fetchPreview, MergeRejectedError } from '@/lib/merge';
 import type { PickSource, Picks, Projection } from '@/lib/merge';
 import { dismiss } from '@/routes/candidates';
 import { index } from '@/routes/duplicates';
@@ -137,7 +137,9 @@ export default function MergeReview({
                 router.visit(index().url);
             })
             .catch((error: unknown) => {
-                if (error instanceof MergeConflictError) {
+                // A guard rejection carries the server's reason; anything else
+                // (a dropped connection, say) has none worth showing.
+                if (error instanceof MergeRejectedError) {
                     toast.error(error.message);
                 } else {
                     toast.error('The merge could not be completed.');
