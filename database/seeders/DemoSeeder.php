@@ -87,6 +87,23 @@ class DemoSeeder extends Seeder
             $this->seedReviewBandPairs();
             $this->seedNoise();
         });
+
+        $this->refreshPlannerStatistics();
+    }
+
+    /**
+     * Bulk-inserting every table leaves Postgres with no statistics on it, so the
+     * planner misjudges the trigram blocks and `detect:run` falls off a cliff — the
+     * same candidate-generation query takes 11.4s on stale stats and 0.8s once they
+     * exist. Autovacuum gets there eventually, but the first `detect:run` after a
+     * seed always beats it, which is precisely the path the README's setup steps and
+     * the demo reset both take.
+     *
+     * Only the tables the blocking self-joins read need it.
+     */
+    private function refreshPlannerStatistics(): void
+    {
+        DB::statement('ANALYZE contacts, emails, phones, household_contacts');
     }
 
     /**
