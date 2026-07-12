@@ -55,6 +55,10 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "deploy": [
+            "@php artisan migrate --force",
+            "@php artisan seed:demo --detect --force"
+        ],
         "lint": [
             "pint --parallel"
         ],
