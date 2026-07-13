@@ -194,3 +194,25 @@ it('seeds the curated set plus roughly two thousand noise contacts', function ()
     expect(Contact::count())->toBe(2018)
         ->and(Contact::where('id', '<=', DemoSeeder::LAST_CURATED_ID)->count())->toBe(18);
 });
+
+/**
+ * The seed bulk-inserts, which leaves Postgres' visibility map and hint bits unset;
+ * it defers that work to whichever query reads the rows first, and that is always
+ * `detect:run`'s trigram self-joins. `ANALYZE` fixes the planner statistics but not
+ * this, so the first post-seed `detect:run` took 12.6s against 1.4s warm — the whole
+ * cost of the deployed reset button. `VACUUM (ANALYZE)` closes it (1.43s vs 1.44s).
+ *
+ * `VACUUM` cannot run inside a transaction block and `RefreshDatabase` wraps every test
+ * in one, so the branch that ships can never execute here. Hence a pure assertion on the
+ * statement itself: the effect is proven by measurement, the choice is proven by tests.
+ */
+it('vacuums after a seed, and falls back to ANALYZE inside a transaction', function () {
+    expect(DemoSeeder::plannerRefreshStatement(0))
+        ->toBe('VACUUM (ANALYZE) contacts, emails, phones, household_contacts')
+        // Not a hardcoded 1: this is the level the suite actually runs at, so the seed in
+        // beforeEach took this branch. A VACUUM here would have aborted it outright with
+        // "VACUUM cannot run inside a transaction block" — every passing test is the proof.
+        ->and(DemoSeeder::plannerRefreshStatement(DB::transactionLevel()))
+        ->toBe('ANALYZE contacts, emails, phones, household_contacts')
+        ->and(DB::transactionLevel())->toBeGreaterThan(0);
+});

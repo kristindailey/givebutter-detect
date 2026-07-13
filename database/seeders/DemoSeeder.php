@@ -103,7 +103,32 @@ class DemoSeeder extends Seeder
      */
     private function refreshPlannerStatistics(): void
     {
-        DB::statement('ANALYZE contacts, emails, phones, household_contacts');
+        DB::statement(self::plannerRefreshStatement(DB::transactionLevel()));
+    }
+
+    /**
+     * `VACUUM` rather than a bare `ANALYZE`, because statistics were only half the
+     * problem. A bulk insert also leaves the visibility map and hint bits unset, and
+     * Postgres defers that work to whichever query reads the rows first — which is
+     * always `detect:run`'s trigram self-joins, scanning every row the seed just wrote.
+     * So the demo reset paid a first-touch tax by construction: the first post-seed
+     * `detect:run` took 12.6s against 1.4s warm, and `VACUUM (ANALYZE)` closes the gap
+     * outright (1.43s vs 1.44s warm).
+     *
+     * `VACUUM` cannot run inside a transaction block, and `RefreshDatabase` wraps every
+     * test in one, so fall back to `ANALYZE` there. A test's first-touch cost is nobody's
+     * problem; the deployed reset — which runs outside any transaction — gets the real one.
+     *
+     * Pure and static so both branches are testable: under `RefreshDatabase` the `VACUUM`
+     * branch can never actually execute.
+     */
+    public static function plannerRefreshStatement(int $transactionLevel): string
+    {
+        $tables = 'contacts, emails, phones, household_contacts';
+
+        return $transactionLevel > 0
+            ? "ANALYZE {$tables}"
+            : "VACUUM (ANALYZE) {$tables}";
     }
 
     /**
