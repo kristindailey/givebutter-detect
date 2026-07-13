@@ -52,3 +52,6 @@ The commit route would merge any two individual contacts: a null candidate skipp
 
 ### Deploy Readiness — seed:demo on a Fresh Database
 The release runs `migrate --force` + `seed:demo`, which couldn't seed an empty database: Faker was dev-only, and only `DatabaseSeeder` made the demo admin. Faker moves to `require`; a new `DemoAdminSeeder` backs both paths.
+
+### Batched Trigram Similarity
+`PairScorer` asked Postgres for one similarity per pair, which is ~1s on localhost but 22s+ over the network, so the deployed reset button read as a timeout. `TrigramSimilarity` now resolves them in one query per 1,000 pairs, scores unchanged.
