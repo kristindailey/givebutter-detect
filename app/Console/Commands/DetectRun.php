@@ -35,6 +35,7 @@ class DetectRun extends Command
     {
         $pairs = $generator->generate();
         $contacts = $this->loadContacts($pairs);
+        $scorer->preloadSimilarities($this->similarityPairs($pairs, $contacts));
         $reviewFloor = (float) config('detection.bands.review');
         $now = now();
 
@@ -120,6 +121,39 @@ class DetectRun extends Command
         }
 
         return DuplicateCandidate::query()->whereIn('id', $staleIds)->delete();
+    }
+
+    /**
+     * The name and address key pairs the scorer will ask about, so they can be resolved
+     * in one batch instead of a round trip apiece.
+     *
+     * Both keys are offered for every pair, including the name keys of pairs whose name
+     * agreement will come from an exact or nickname match and never reach the trigram.
+     * Predicting that here would mean duplicating the scorer's precedence rules in the
+     * command — a correctness risk to save Postgres a few thousand trigram comparisons
+     * it does in milliseconds inside a query it is already running.
+     *
+     * @param  Collection<int, array{a_id: int, b_id: int}>  $pairs
+     * @param  Collection<int, Contact>  $contacts
+     * @return list<array{0: ?string, 1: ?string}>
+     */
+    private function similarityPairs(Collection $pairs, Collection $contacts): array
+    {
+        $keys = [];
+
+        foreach ($pairs as $pair) {
+            $a = $contacts->get($pair['a_id']);
+            $b = $contacts->get($pair['b_id']);
+
+            if ($a === null || $b === null) {
+                continue;
+            }
+
+            $keys[] = [$a->name_key, $b->name_key];
+            $keys[] = [$a->address_key, $b->address_key];
+        }
+
+        return $keys;
     }
 
     /**

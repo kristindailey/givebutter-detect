@@ -3,7 +3,6 @@
 namespace App\Services\Detection;
 
 use App\Models\Contact;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Weighted per-signal scorer with the asymmetric household modifier — the pitch
@@ -44,7 +43,7 @@ class PairScorer
     /** @var array<string, list<string>> */
     private array $nicknames;
 
-    public function __construct(private Normalizer $normalizer)
+    public function __construct(private Normalizer $normalizer, private TrigramSimilarity $trigram)
     {
         $this->weights = [
             'email' => (float) config('detection.weights.email'),
@@ -65,6 +64,21 @@ class PairScorer
         /** @var array<string, list<string>> $nicknames */
         $nicknames = config('nicknames');
         $this->nicknames = $nicknames;
+    }
+
+    /**
+     * Resolve the trigram similarities a batch of pairs will need, in one query per
+     * chunk, before any of them are scored.
+     *
+     * Optional: `score()` is correct without it and simply asks per pair. `detect:run`
+     * calls it because per-pair is thousands of network round trips against a remote
+     * Postgres — see `TrigramSimilarity`.
+     *
+     * @param  iterable<array{0: ?string, 1: ?string}>  $pairs
+     */
+    public function preloadSimilarities(iterable $pairs): void
+    {
+        $this->trigram->preload($pairs);
     }
 
     /**
@@ -251,22 +265,17 @@ class PairScorer
     }
 
     /**
-     * Trigram similarity via Postgres' `pg_trgm`, floored at the configured
-     * threshold so sub-threshold noise contributes nothing. Identical keys short
-     * out to 1.0 without a query; a null key means the signal cannot fire.
+     * Trigram similarity via Postgres' `pg_trgm`, floored at the configured threshold
+     * so sub-threshold noise contributes nothing.
+     *
+     * The lookup itself belongs to `TrigramSimilarity`, which serves it from a batch
+     * `detect:run` preloads — a query per pair is free against localhost and a network
+     * round trip against managed Postgres. The floor stays here: it is scoring policy,
+     * not measurement.
      */
     private function similarity(?string $a, ?string $b): float
     {
-        if ($a === null || $b === null || $a === '' || $b === '') {
-            return 0.0;
-        }
-
-        if ($a === $b) {
-            return 1.0;
-        }
-
-        $row = DB::selectOne('select similarity(?, ?) as score', [$a, $b]);
-        $score = $row === null ? 0.0 : (float) ((array) $row)['score'];
+        $score = $this->trigram->score($a, $b);
 
         return $score >= $this->similarityFloor ? $score : 0.0;
     }
