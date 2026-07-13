@@ -4,6 +4,7 @@ use App\Models\Contact;
 use App\Models\DuplicateCandidate;
 use App\Services\MergeService;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The batch job end to end: generate candidates, score them, and repopulate the
@@ -123,4 +124,32 @@ it('refreshes the score of a pair that is already in the queue', function () {
     $this->artisan('detect:run')->assertSuccessful();
 
     expect($hero->refresh()->score)->toBe('94.00');
+});
+
+/**
+ * Scoring used to ask Postgres for one trigram similarity at a time: a query for each
+ * pair's address keys, and another in the fuzzy-name fallback. Thousands of sequential
+ * round trips, which is ~1s against localhost and 22s+ against managed Postgres, where
+ * every one of them crosses a network. The deployed reset button read as a timeout.
+ *
+ * The similarities are now resolved in one query per chunk, so the count is bounded by
+ * the batch size rather than by the number of pairs. Pinned low deliberately: any
+ * regression to per-pair lookups blows straight through this.
+ */
+it('resolves trigram similarities in batches, not one query per pair', function () {
+    DB::enableQueryLog();
+
+    $this->artisan('detect:run')->assertSuccessful();
+
+    // CandidateGenerator's fuzzy blocks use the `%` operator, so `similarity(` matches
+    // only the scorer's own lookups.
+    $lookups = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], 'similarity('))
+        ->count();
+
+    // The seed's ~4k pairs preload in 9 chunks today. The bound is deliberately loose:
+    // it exists to catch a return to per-pair lookups (which would be *thousands*), not
+    // to pin the chunk count, so growing the seed can't fail this for the wrong reason.
+    expect(DuplicateCandidate::count())->toBeGreaterThan(0)
+        ->and($lookups)->toBeLessThan(50);
 });
