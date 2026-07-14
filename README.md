@@ -2,7 +2,7 @@
 
 A proactive data-trust layer for agentic CRM. Detect is a multi-signal weighted duplicate matcher with a merge preview that shows how giving history recomputes before anything commits.
 
-One-liner: watch `contact_since` correct itself in real time when you merge Jennifer + Jen.
+🔗 [Try the live demo.](https://givebutter-detect-production-klgyoq.laravel.cloud/)
 
 ## The pitch: Detect, Score, Gate
 
@@ -42,6 +42,12 @@ Auth is stubbed to an auto-logged-in seeded demo admin.
 
 ## Getting started
 
+### Deployed demo
+
+[Try the live demo.](https://givebutter-detect-production-klgyoq.laravel.cloud/)
+
+### Running it locally
+
 Requires PHP 8.4+, Node, and PostgreSQL with `pg_trgm` available.
 
 ```bash
@@ -53,6 +59,8 @@ composer run dev
 ```
 
 Seeding lands the contacts and hero cases; `detect:run` scores them into the queue (it is a separate step, so the queue is empty until it runs). `composer run dev` then runs the app server, queue, and Vite together. Open the app and go to `/duplicates`.
+
+**No Postgres on hand?** `docker compose up -d` (after the `cp .env.example .env` above) brings up a Postgres 16 with the right credentials baked in. The `pg_trgm` extension is enabled by migration. If you already run Postgres on port 5432, either stop it first or set `DB_PORT` to a free port in `.env`.
 
 ## Re-running the demo
 
