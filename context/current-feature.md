@@ -1,26 +1,18 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: FieldPicker In-Flight State
-
-The `FieldPicker` choice cards stay live while a merge or dismiss is in flight. Every other control on the Merge Review screen — both buttons and the survivor toggle — disables. Last item from the dismiss review.
+# Current Feature
+<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
 
 ## Status
-In Progress
+Not Started
 
 ## Goals
 
-- The `FieldPicker` choice cards disable while a merge or dismiss is in flight, matching the rest of the screen.
-- Disabled cards read as disabled (no hover affordance, dimmed), consistent with how the other controls look.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- **Tidiness, not a bug.** `handleMerge` passes `picks` to `commitMerge()` at click time, so a card clicked mid-flight cannot change what commits. Nothing is at risk and no race is being closed — frame the commit that way rather than implying otherwise.
-- **They are not radios.** `FieldPicker` renders `<button type="button" aria-pressed={selected}>` choice cards (`ChoiceCard`), styled to look like radio cards. Earlier notes in this repo's history called them radios; the fix is a native `disabled` on a button, not radio-group semantics.
-- Plumb a `disabled` prop: `FieldPickerProps` → `ChoiceCard` → the `<button>`. Gate it on `committing || dismissing` in `merge-review.tsx` — the same expression the survivor toggle and both action buttons already use.
-- Styling: `ChoiceCard` has `hover:bg-muted/50` on the unselected state, which shouldn't fire while disabled. `AppShell`'s reset button uses `disabled:opacity-60` — follow that. Tailwind's `disabled:` variant works on the native attribute.
-- The Panel wrapping the picker already renders a `Skeleton` while `loading`, so the picker only exists once a projection has loaded; `disabled` covers the in-flight window *after* that, not the initial load.
-- **No Pest test** — the UI is prototype-grade by convention; verify in the browser. To hold a request open: `page.route` the POST with a `waitForTimeout` inside the handler, then read the controls mid-flight.
-- The survivor toggle is a shadcn `Select`, so its trigger has role `combobox`, not `button` — a `getByRole('button')` sweep won't see it. Worth knowing when verifying which controls actually disabled.
+<!-- Additional context, constraints, or details from spec -->
 
 ## Next up (separate branch)
 
@@ -79,3 +71,6 @@ A failed dismiss said nothing and bounced to Inertia's error page; an in-flight 
 
 ### Reset Button's Dead onError
 The same dead `onError` in the demo reset button, where a 429 is the realistic failure — the throttle exists because a live demo is what trips it. A/B against an intercepted 429: no toast at all, and Inertia covering the screen with "All Inertia requests must receive a valid Inertia response…" in front of an audience. The throttle now gets named copy ("wait a minute"), branched off the status line so an unplanned 500 still can't toast internals. Merge, dismiss, and reset are the app's only three client→server actions; all three now report failure.
+
+### FieldPicker In-Flight State
+The picker's choice cards stayed live while a merge or dismiss was underway, alone among the screen's controls. Cosmetic only — `picks` is captured at click time, so a card pressed mid-request could never have changed what commits. The hover class is dropped while disabled rather than overridden, since a `disabled:hover:` rule would have to name the idle background and would lie the day it changed. Every control on Merge Review now gates on the in-flight state except Cancel and Back to queue, which stay live on purpose.
