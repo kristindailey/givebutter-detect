@@ -1,26 +1,18 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: Reset Button's Dead onError
-
-`ResetDemoButton` (`resources/js/layouts/AppShell.tsx:96`) handles failure with `onError` on a route that has no validation, so its toast has never fired. A throttled reset drops a full-screen framework diagnostic over the demo — the exact outcome the route's own throttle comment says it's trying to avoid.
+# Current Feature
+<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
 
 ## Status
-In Progress
+Not Started
 
 ## Goals
 
-- A failed demo reset toasts and keeps the user where they are, instead of Inertia's error page. A 429 (the realistic case) is the one to verify.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- **`onError` is dead code at `AppShell.tsx:96`.** Same bug just fixed in `handleDismiss`: `onError` fires only for validation errors on otherwise-successful visits. `DemoResetController` aborts 404 (flag off), 429s (throttled), or redirects — never validation. Replace with `onHttpException`/`onNetworkError` returning `false`, exactly as `handleDismiss` now does.
-- **The 429 is why this matters.** `routes/web.php` throttles the route at 15/min and its comment says the limit is loose on purpose because "the person most likely to hit the limit is whoever is driving a live demo, and a rate-limit error mid-demo is worse than the load it would have prevented." Today a 429 does exactly that.
-- **Observed, not assumed** (A/B'd in the browser against an intercepted 429): the old code shows *no toast at all* — silent — and Inertia covers the screen with a modal reading "All Inertia requests must receive a valid Inertia response, however a plain JSON response was received. {"message":"Too Many Attempts."}". There is **no navigation**; an earlier draft of this spec wrongly said "bounces to an error page". It's a modal overlay, and the content is a framework diagnostic — worse for a live demo than a wrong page would be.
-- Verifying via the `demo.reset_enabled` flag doesn't work: laravel-vite-plugin watches `.env` and restarts on change, so the page reloads and the button correctly disappears before it can be clicked. Intercept the response instead.
-- The reset button's in-flight state is already correct (`resetting` + `onFinish`); only the error handling is wrong. Don't rewrite what works.
-- Reset is destructive and slow (~2.3s of database work). Unlike dismiss, a failed reset may have *partially* run, so the copy shouldn't promise nothing happened — keep it to "could not be reset."
-- The three client→server actions are merge (`lib/merge.ts`), dismiss, and reset — a full sweep of `resources/js` found no `useForm`, no `<Form>`, no other `router` calls. This is the last of the three.
-- **No Pest test** — same convention as the last two: the UI is prototype-grade, verified in the browser.
+<!-- Additional context, constraints, or details from spec -->
 
 ## Next up (separate branch)
 
@@ -76,3 +68,6 @@ The deployed reset button took ~20s, and it was neither the scorer nor CPU: a bu
 
 ### Dismiss In-Flight State + Failure Toast
 A failed dismiss said nothing and bounced to Inertia's error page; an in-flight one left every control live. The fix hangs on a docs detail: `onError` fires only for validation errors, so the obvious handler would have been dead code — `onHttpException`/`onNetworkError` returning `false` are what toast and hold the page. A `dismissing` state now relabels the button and gates Merge and the survivor toggle.
+
+### Reset Button's Dead onError
+The same dead `onError` in the demo reset button, where a 429 is the realistic failure — the throttle exists because a live demo is what trips it. A/B against an intercepted 429: no toast at all, and Inertia covering the screen with "All Inertia requests must receive a valid Inertia response…" in front of an audience. The throttle now gets named copy ("wait a minute"), branched off the status line so an unplanned 500 still can't toast internals. Merge, dismiss, and reset are the app's only three client→server actions; all three now report failure.
