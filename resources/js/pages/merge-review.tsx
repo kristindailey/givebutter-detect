@@ -56,6 +56,7 @@ export default function MergeReview({
     const [loading, setLoading] = useState(true);
     const [picks, setPicks] = useState<Picks>({});
     const [committing, setCommitting] = useState(false);
+    const [dismissing, setDismissing] = useState(false);
     const [flashKey, setFlashKey] = useState(0);
 
     const survivor = useMemo(
@@ -150,11 +151,29 @@ export default function MergeReview({
     };
 
     const handleDismiss = () => {
+        // Unlike a merge, a dismiss has no guards of its own to explain — it's
+        // idempotent and always redirects — so any failure here is unplanned: a 419
+        // on a tab left open, a 404 once a reseed has renumbered the pairs. Hence
+        // one fixed message rather than the server's: `lib/merge.ts` reads the
+        // response body only for the merge guards, precisely so an unplanned
+        // failure can't toast internals at a reviewer.
+        const reportFailure = () => {
+            toast.error('The pair could not be dismissed.');
+
+            // Keeps the reviewer here to retry. Without this, Inertia's default is
+            // to navigate to its error page.
+            return false;
+        };
+
         router.post(
             dismiss(candidateId).url,
             {},
             {
+                onStart: () => setDismissing(true),
+                onFinish: () => setDismissing(false),
                 onSuccess: () => toast.success('Marked as not a duplicate.'),
+                onHttpException: reportFailure,
+                onNetworkError: reportFailure,
             },
         );
     };
@@ -180,7 +199,7 @@ export default function MergeReview({
                         contacts={contacts}
                         survivorId={survivorId}
                         onChange={handleSurvivorChange}
-                        disabled={committing}
+                        disabled={committing || dismissing}
                     />
                 </div>
 
@@ -244,16 +263,21 @@ export default function MergeReview({
                     <Button
                         variant="ghost"
                         onClick={handleDismiss}
-                        disabled={committing}
+                        disabled={committing || dismissing}
                     >
-                        Not a duplicate
+                        {dismissing ? 'Dismissing…' : 'Not a duplicate'}
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href={index()}>Cancel</Link>
                     </Button>
                     <Button
                         onClick={handleMerge}
-                        disabled={committing || loading || projection === null}
+                        disabled={
+                            committing ||
+                            dismissing ||
+                            loading ||
+                            projection === null
+                        }
                         className="bg-brand-blue text-brand-white hover:bg-brand-blue/90"
                     >
                         {committing ? 'Merging…' : 'Merge'}
