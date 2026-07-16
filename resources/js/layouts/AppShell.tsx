@@ -116,7 +116,7 @@ function ResetDemoButton() {
                 onHttpException: (response) =>
                     reportFailure(
                         response.status === TOO_MANY_REQUESTS
-                            ? 'Resetting too often — wait a minute and try again.'
+                            ? 'Too many resets. Wait a minute and try again.'
                             : RESET_FAILED,
                     ),
                 onNetworkError: () => reportFailure(RESET_FAILED),
