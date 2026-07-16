@@ -1,29 +1,26 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: Dismiss In-Flight State + Failure Toast
+# Current Feature: Reset Button's Dead onError + Picker In-Flight State
 
-The two UX gaps left by the dismiss-redirect fix, both in `handleDismiss` (`resources/js/pages/merge-review.tsx:152`). Merge tracks its request and toasts what went wrong; dismiss does neither — it fires and hopes.
+The two items the dismiss review turned up. `ResetDemoButton` (`resources/js/layouts/AppShell.tsx:96`) handles failure with `onError` on a route that has no validation, so its toast has never fired — a throttled reset bounces the presenter to an error page mid-demo. And the `FieldPicker` radios stay live while a merge or dismiss is in flight.
 
 ## Status
-In Progress
+Not Started
 
 ## Goals
 
-- A failed dismiss toasts a user-friendly error and leaves the reviewer on the page to retry, instead of Inertia's default bounce to an error modal.
-- "Not a duplicate" disables itself while its own request is in flight, mirroring how Merge reads `Merging…` and disables.
-- A dismiss in flight also disables Merge and the survivor toggle, the same way a merge in flight already disables dismiss.
+- A failed demo reset toasts and keeps the user where they are, instead of Inertia's error page. A 429 (the realistic case) is the one to verify.
+- The `FieldPicker` radios disable while a merge or dismiss is in flight, matching every other control on the screen.
 
 ## Notes
 
-- **The `onError` I flagged was wrong.** Verified against the v3 docs: `onError` fires only "when validation errors are present on successful page visits" — it and `onSuccess` are two branches of the same successful-response path, split on whether an errors bag is present. Dismiss has no validation and always redirects, so an `onError` handler would be dead code. Inertia v3's per-visit `onHttpException(response)` (4xx/5xx) and `onNetworkError(error)` are the correct hooks; they were v2's global `invalid`/`exception` events.
-- Returning `false` from `onHttpException` "prevents Inertia from navigating to the error page, allowing for in-page error handling" (upgrade guide, verbatim). That's what keeps the reviewer on the merge screen with a toast.
-- `onFinish` "fires after an XHR request has completed for both successful and unsuccessful responses" and the docs nominate it for hiding loading indicators — so `onStart`/`onFinish` is the right pair for the in-flight state. One wrinkle: returning a promise from `onSuccess`/`onError` *delays* `onFinish` until it resolves. Ours return nothing, so this doesn't bite, but don't start returning promises from them.
-- Nothing configures `Inertia::handleExceptionsUsing()`, so today a failed dismiss falls through to Inertia's default error modal. That's the behavior being replaced.
-- **Do not read the response body for the toast copy.** `lib/merge.ts` deliberately reads `message` only for the guard statuses (404/409/422) so an unplanned failure can't toast internals like "No query results for model [App\Models\Contact] 1002." Dismiss has no guard statuses of its own — it's idempotent and always redirects — so it gets one fixed generic message.
-- Realistic failure modes: a 419 (session expired on a demo tab left open overnight), a 404 (a candidate id that no longer exists after a reseed — the scheduled reset renumbers `duplicate_candidates`), a 500.
-- Add a `dismissing` state next to the existing `committing`. Both buttons and `SurvivorToggle` gate on `committing || dismissing`; `onStart`/`onFinish` drive it.
-- **No Pest test.** Project convention is deliberate: "the matcher and the money-math are tested; the UI is prototype-grade." Verify in the browser; the gate covers TypeScript and lint. Forcing the 419/500 path is a manual check.
-- The success toast survives the redirect because `<Toaster />` is mounted in `app.tsx` at the root, above the swapped page component — not because of any documented `onSuccess`-vs-render ordering, which the v3 docs are silent on. The failure toasts inherit that same persistence, so a toast fired from `onHttpException` is safe whether or not the page changes.
+- **`onError` is dead code at `AppShell.tsx:96`.** Same bug just fixed in `handleDismiss`: `onError` fires only for validation errors on otherwise-successful visits. `DemoResetController` aborts 404 (flag off), 429s (throttled), or redirects — never validation. Replace with `onHttpException`/`onNetworkError` returning `false`, exactly as `handleDismiss` now does.
+- **The 429 is why this matters.** `routes/web.php` throttles the route at 15/min and its comment says the limit is loose on purpose because "the person most likely to hit the limit is whoever is driving a live demo, and a rate-limit error mid-demo is worse than the load it would have prevented." Today a 429 does exactly that — bounces to the error page. Force it by clicking the button 16 times.
+- The reset button's in-flight state is already correct (`resetting` + `onFinish`); only the error handling is wrong. Don't rewrite what works.
+- `FieldPicker` has no `disabled` prop today — it needs one plumbed from `merge-review.tsx`, gated on `committing || dismissing`.
+- **The picker fix is tidiness, not a bug.** `handleMerge` passes `picks` to `commitMerge()` at click time, so a radio clicked mid-flight cannot change what commits. Nothing is at risk; the controls are just inconsistent.
+- The three client→server actions are merge (`lib/merge.ts`), dismiss, and reset — a full sweep of `resources/js` found no `useForm`, no `<Form>`, no other `router` calls. After this, all three handle failure correctly.
+- **No Pest test** — same convention as the last two: the UI is prototype-grade, verified in the browser.
 
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
@@ -72,3 +69,6 @@ The deployed reset button took ~20s, and it was neither the scorer nor CPU: a bu
 
 ### Dismiss Redirects to the Review Queue
 "Not a duplicate" stranded the reviewer on the pair they had just resolved: `dismiss` returned `back()`, and its only caller is the Merge Review page. The dismissal always committed, so only the navigation was wrong — `to_route('duplicates.index')` matches merge, cancel, and `DemoResetController`. The existing tests called `markDismissed()` directly and never hit the route, which is how the wrong target went unnoticed.
+
+### Dismiss In-Flight State + Failure Toast
+A failed dismiss said nothing and bounced to Inertia's error page; an in-flight one left every control live. The fix hangs on a docs detail: `onError` fires only for validation errors, so the obvious handler would have been dead code — `onHttpException`/`onNetworkError` returning `false` are what toast and hold the page. A `dismissing` state now relabels the button and gates Merge and the survivor toggle.
