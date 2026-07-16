@@ -160,8 +160,8 @@ export default function MergeReview({
         const reportFailure = () => {
             toast.error('The pair could not be dismissed.');
 
-            // Keeps the reviewer here to retry. Without this, Inertia's default is
-            // to navigate to its error page.
+            // Keeps the reviewer here to retry. Without this, Inertia covers the
+            // screen with a modal dump of the raw response.
             return false;
         };
 

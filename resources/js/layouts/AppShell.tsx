@@ -77,6 +77,9 @@ function SidebarLink({ item }: { item: NavItem }) {
     );
 }
 
+const RESET_FAILED = 'The demo data could not be reset.';
+const TOO_MANY_REQUESTS = 429;
+
 /**
  * Restores the seeded dataset so the Jennifer/Jen merge can be run again. Only
  * rendered on a demo deployment (see `config/demo.php`), which is the one place
@@ -88,12 +91,35 @@ function ResetDemoButton() {
     const handleReset = () => {
         setResetting(true);
 
+        // `onError` cannot catch any of this: it fires only for validation errors
+        // on otherwise-successful visits, and this route has none. Uncaught,
+        // Inertia covers the screen with a modal reading "All Inertia requests
+        // must receive a valid Inertia response…" — a framework diagnostic, in
+        // front of an audience. Returning false suppresses that modal in favor of
+        // the toast.
+        const reportFailure = (message: string) => {
+            toast.error(message);
+
+            return false;
+        };
+
         router.post(
             reset().url,
             {},
             {
                 onSuccess: () => toast.success('Demo data reset.'),
-                onError: () => toast.error('The demo data could not be reset.'),
+                // Branch on the status line, never the body — `lib/merge.ts`
+                // explains why an unplanned failure's `message` stays unread. The
+                // throttle is the one failure worth naming: whoever trips it is
+                // mid-demo, and "wait" is the action. The generic copy would just
+                // invite the click that fails again.
+                onHttpException: (response) =>
+                    reportFailure(
+                        response.status === TOO_MANY_REQUESTS
+                            ? 'Resetting too often — wait a minute and try again.'
+                            : RESET_FAILED,
+                    ),
+                onNetworkError: () => reportFailure(RESET_FAILED),
                 onFinish: () => setResetting(false),
             },
         );
