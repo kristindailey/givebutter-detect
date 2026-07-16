@@ -1,18 +1,26 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature
-<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
+# Current Feature: FieldPicker In-Flight State
+
+The `FieldPicker` choice cards stay live while a merge or dismiss is in flight. Every other control on the Merge Review screen — both buttons and the survivor toggle — disables. Last item from the dismiss review.
 
 ## Status
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- The `FieldPicker` choice cards disable while a merge or dismiss is in flight, matching the rest of the screen.
+- Disabled cards read as disabled (no hover affordance, dimmed), consistent with how the other controls look.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- **Tidiness, not a bug.** `handleMerge` passes `picks` to `commitMerge()` at click time, so a card clicked mid-flight cannot change what commits. Nothing is at risk and no race is being closed — frame the commit that way rather than implying otherwise.
+- **They are not radios.** `FieldPicker` renders `<button type="button" aria-pressed={selected}>` choice cards (`ChoiceCard`), styled to look like radio cards. Earlier notes in this repo's history called them radios; the fix is a native `disabled` on a button, not radio-group semantics.
+- Plumb a `disabled` prop: `FieldPickerProps` → `ChoiceCard` → the `<button>`. Gate it on `committing || dismissing` in `merge-review.tsx` — the same expression the survivor toggle and both action buttons already use.
+- Styling: `ChoiceCard` has `hover:bg-muted/50` on the unselected state, which shouldn't fire while disabled. `AppShell`'s reset button uses `disabled:opacity-60` — follow that. Tailwind's `disabled:` variant works on the native attribute.
+- The Panel wrapping the picker already renders a `Skeleton` while `loading`, so the picker only exists once a projection has loaded; `disabled` covers the in-flight window *after* that, not the initial load.
+- **No Pest test** — the UI is prototype-grade by convention; verify in the browser. To hold a request open: `page.route` the POST with a `waitForTimeout` inside the handler, then read the controls mid-flight.
+- The survivor toggle is a shadcn `Select`, so its trigger has role `combobox`, not `button` — a `getByRole('button')` sweep won't see it. Worth knowing when verifying which controls actually disabled.
 
 ## Next up (separate branch)
 
