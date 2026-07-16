@@ -78,7 +78,12 @@ class DuplicateController extends Controller
     /**
      * "Not a duplicate" — marks the pair `dismissed` and drops it from the queue.
      * Idempotent: a pair that's already resolved is left untouched, so a stale tab
-     * can't overwrite a merge outcome. Redirects back to the Review Queue.
+     * can't overwrite a merge outcome.
+     *
+     * Redirects to the queue explicitly rather than with `back()`: the only caller
+     * is the Merge Review page, so `back()` returns to the pair just dismissed —
+     * a page whose reason to exist is now resolved. Dismiss and merge are the two
+     * outcomes of a review, and both belong back at the queue.
      */
     public function dismiss(DuplicateCandidate $candidate): RedirectResponse
     {
@@ -86,7 +91,7 @@ class DuplicateController extends Controller
             $candidate->markDismissed();
         }
 
-        return back();
+        return to_route('duplicates.index');
     }
 
     /**
