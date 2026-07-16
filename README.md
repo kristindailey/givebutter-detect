@@ -2,24 +2,24 @@
 
 A proactive data-trust layer for agentic CRM. Detect is a multi-signal weighted duplicate matcher with a merge preview that shows how giving history recomputes before anything commits.
 
-🔗 [Try the live demo.](https://givebutter-detect-production-klgyoq.laravel.cloud/)
+🔗 [Live demo:](https://givebutter-detect-production-klgyoq.laravel.cloud/) Merge Jennifer + Jen and watch `contact_since` correct itself.
 
 ## The pitch: Detect, Score, Gate
 
-Agents that act on records need a higher data-trust bar than a CRM built for humans. This prototype builds the first pillar.
+When agents act on CRM records, the bar for trusting that data goes way up. This prototype builds the first pillar.
 
 - **Detect** (this repo): smarter duplicate detection plus a safe, reviewable merge.
-- **Score** (deck only): a per-contact Trust Score.
+- **Score** (deck only): a per-contact trust score.
 - **Gate** (deck only): an agent pre-flight check before mutations.
 
-Givebutter's public API can create, update, archive, restore, and household-link contacts, but has no merge endpoint. Merge is the destructive, high-trust operation a trust layer should own. This prototype builds the matcher and the review gate that sit on top of it.
+Givebutter's public API can create, update, archive, restore, and household-link contacts, but it has no merge endpoint. Merge is the destructive, high-trust operation a trust layer should own. This prototype builds the matcher and the review gate that sit on top of Givebutter's existing dedupe.
 
 ## The two hero cases
 
-The demo proves the prototype beats a naive exact-match rule in both directions.
+Givebutter runs two contradictory matching rules. A strict import rule requires a name match, so it splits real duplicates. A loose daily scan ignores names, so it merges different people. The demo proves the prototype beats both rules, in both directions.
 
-1. **Jennifer / Jen** (naive rule misses, we catch). Same person, different first name and different emails. Matched via fuzzy preferred-name, shared household, and `dob` agreement. Scores ~94, merges, and drags `contact_since` backward.
-2. **Parent / child** (naive rule over-merges, we do not). Different people sharing a household email, surname, and address. The household modifier dampens the shared-email signal and a conflicting `dob` pushes them apart. Scores ~35, never surfaced.
+1. **Jennifer / Jen** (naive rule misses, Detect catches). Same person, different first name and different emails. Matched via fuzzy preferred-name, shared household, and `dob` agreement. Scores ~94, merges, and drags `contact_since` backward.
+2. **Parent / child** (naive rule over-merges, Detect keeps them apart). Different people sharing a household email, surname, and address. The household modifier dampens the shared-email signal and a conflicting `dob` pushes them apart. Scores ~35, never surfaced.
 
 ## How it works
 
@@ -32,7 +32,7 @@ The demo proves the prototype beats a naive exact-match rule in both directions.
 
 | Layer | Choice |
 | ----- | ------ |
-| App shell | Laravel + Inertia 2 (shared session, no CORS) |
+| App shell | Laravel + Inertia 3 (shared session, no CORS) |
 | Frontend | TypeScript, React 19, Vite, Tailwind v4, shadcn/ui |
 | Backend | PHP 8.4+, Laravel |
 | Database | PostgreSQL with the `pg_trgm` extension |
@@ -58,7 +58,7 @@ php artisan detect:run
 composer run dev
 ```
 
-Seeding lands the contacts and hero cases; `detect:run` scores them into the queue (it is a separate step, so the queue is empty until it runs). `composer run dev` then runs the app server, queue, and Vite together. Open the app and go to `/duplicates`.
+Seeding lands the contacts and hero cases. `detect:run` scores them into the queue (it is a separate step, so the queue is empty until it runs). `composer run dev` then runs the app server, queue, and Vite together. Open the app and go to `/duplicates`.
 
 **No Postgres on hand?** `docker compose up -d` (after the `cp .env.example .env` above) brings up a Postgres 16 with the right credentials baked in. The `pg_trgm` extension is enabled by migration. If you already run Postgres on port 5432, either stop it first or set `DB_PORT` to a free port in `.env`.
 
@@ -110,10 +110,10 @@ php artisan test --compact
 ## Project structure
 
 ```
-app/Services/Detection/   Normalizer, CandidateGenerator, PairScorer
-app/Services/MergeService.php   shared preview/commit projection
-app/Console/Commands/     detect:run, seed:demo
-database/seeders/         DemoSeeder (~2k contacts + hero cases)
-resources/js/pages/       review-queue.tsx, merge-review.tsx
-tests/                    scoring + recompute on the two hero cases
+app/Services/Detection/        Normalizer, CandidateGenerator, PairScorer
+app/Services/MergeService.php  shared preview/commit projection
+app/Console/Commands/          detect:run, seed:demo
+database/seeders/              DemoSeeder (~2k contacts + hero cases)
+resources/js/pages/            review-queue.tsx, merge-review.tsx
+tests/                         scoring + recompute on the two hero cases
 ```
