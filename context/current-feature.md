@@ -1,18 +1,29 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature
-<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
+# Current Feature: Dismiss In-Flight State + Failure Toast
+
+The two UX gaps left by the dismiss-redirect fix, both in `handleDismiss` (`resources/js/pages/merge-review.tsx:152`). Merge tracks its request and toasts what went wrong; dismiss does neither — it fires and hopes.
 
 ## Status
-Not Started
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- A failed dismiss toasts a user-friendly error and leaves the reviewer on the page to retry, instead of Inertia's default bounce to an error modal.
+- "Not a duplicate" disables itself while its own request is in flight, mirroring how Merge reads `Merging…` and disables.
+- A dismiss in flight also disables Merge and the survivor toggle, the same way a merge in flight already disables dismiss.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- **The `onError` I flagged was wrong.** Verified against the v3 docs: `onError` fires only "when validation errors are present on successful page visits" — it and `onSuccess` are two branches of the same successful-response path, split on whether an errors bag is present. Dismiss has no validation and always redirects, so an `onError` handler would be dead code. Inertia v3's per-visit `onHttpException(response)` (4xx/5xx) and `onNetworkError(error)` are the correct hooks; they were v2's global `invalid`/`exception` events.
+- Returning `false` from `onHttpException` "prevents Inertia from navigating to the error page, allowing for in-page error handling" (upgrade guide, verbatim). That's what keeps the reviewer on the merge screen with a toast.
+- `onFinish` "fires after an XHR request has completed for both successful and unsuccessful responses" and the docs nominate it for hiding loading indicators — so `onStart`/`onFinish` is the right pair for the in-flight state. One wrinkle: returning a promise from `onSuccess`/`onError` *delays* `onFinish` until it resolves. Ours return nothing, so this doesn't bite, but don't start returning promises from them.
+- Nothing configures `Inertia::handleExceptionsUsing()`, so today a failed dismiss falls through to Inertia's default error modal. That's the behavior being replaced.
+- **Do not read the response body for the toast copy.** `lib/merge.ts` deliberately reads `message` only for the guard statuses (404/409/422) so an unplanned failure can't toast internals like "No query results for model [App\Models\Contact] 1002." Dismiss has no guard statuses of its own — it's idempotent and always redirects — so it gets one fixed generic message.
+- Realistic failure modes: a 419 (session expired on a demo tab left open overnight), a 404 (a candidate id that no longer exists after a reseed — the scheduled reset renumbers `duplicate_candidates`), a 500.
+- Add a `dismissing` state next to the existing `committing`. Both buttons and `SurvivorToggle` gate on `committing || dismissing`; `onStart`/`onFinish` drive it.
+- **No Pest test.** Project convention is deliberate: "the matcher and the money-math are tested; the UI is prototype-grade." Verify in the browser; the gate covers TypeScript and lint. Forcing the 419/500 path is a manual check.
+- The success toast survives the redirect because `<Toaster />` is mounted in `app.tsx` at the root, above the swapped page component — not because of any documented `onSuccess`-vs-render ordering, which the v3 docs are silent on. The failure toasts inherit that same persistence, so a toast fired from `onHttpException` is safe whether or not the page changes.
 
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
