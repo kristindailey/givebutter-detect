@@ -1,24 +1,18 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: Dismiss Redirects to the Review Queue
-
-"Not a duplicate" on the Merge Review page leaves you on `/duplicates/{id}` instead of returning to the queue, unlike Merge and Cancel. `DuplicateController@dismiss` returns `back()`, and from the Merge Review page the referrer *is* that page — so Inertia re-renders it.
+# Current Feature
+<!-- Title above as "# Current Feature: <name>", followed by a one- or two-sentence description of the feature/fix. -->
 
 ## Status
-In Progress
+Not Started
 
 ## Goals
 
-- `dismiss` redirects to the Review Queue (`duplicates.index`), matching the outcome of Merge and Cancel.
-- The success toast still fires on arrival at the queue, and the dismissed pair is gone from it.
-- A Pest test covers the redirect target, so the endpoint's response — not just its side effect — is pinned.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- The bug is server-side, at `app/Http/Controllers/DuplicateController.php:89`. The docblock on line 81 already claims "Redirects back to the Review Queue" — the intent was there; `back()` doesn't honor it. Fix the response, not the client.
-- Existing tests cover `markDismissed()`'s side effect (`DataLayerGuardsTest`, `DetectRunTest`) but never hit the route, which is why the wrong redirect target went unnoticed.
-- The idempotency guard (an already-resolved pair is left untouched) stays as-is — it should redirect to the queue either way.
-- `handleDismiss` in `resources/js/pages/merge-review.tsx:152` needs no change: `router.post` follows the redirect, and `onSuccess` fires after the queue renders.
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
@@ -64,3 +58,6 @@ The release runs `migrate --force` + `seed:demo`, which couldn't seed an empty d
 
 ### VACUUM After Seeding
 The deployed reset button took ~20s, and it was neither the scorer nor CPU: a bulk insert leaves Postgres' visibility map unset, so the first post-seed `detect:run` scanned cold rows. `VACUUM (ANALYZE)` instead of `ANALYZE` took the full reset from 14s to 2.3s.
+
+### Dismiss Redirects to the Review Queue
+"Not a duplicate" stranded the reviewer on the pair they had just resolved: `dismiss` returned `back()`, and its only caller is the Merge Review page. The dismissal always committed, so only the navigation was wrong — `to_route('duplicates.index')` matches merge, cancel, and `DemoResetController`. The existing tests called `markDismissed()` directly and never hit the route, which is how the wrong target went unnoticed.
