@@ -232,6 +232,7 @@ export default function MergeReview({
                                 onPick={handlePick}
                                 survivorName={survivor.name}
                                 loserName={loser.name}
+                                disabled={committing || dismissing}
                             />
                         )}
                     </Panel>
