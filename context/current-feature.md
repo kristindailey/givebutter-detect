@@ -1,26 +1,30 @@
 <!-- Living document tracking the feature currently being worked on -->
 
-# Current Feature: Reset Button's Dead onError + Picker In-Flight State
+# Current Feature: Reset Button's Dead onError
 
-The two items the dismiss review turned up. `ResetDemoButton` (`resources/js/layouts/AppShell.tsx:96`) handles failure with `onError` on a route that has no validation, so its toast has never fired — a throttled reset bounces the presenter to an error page mid-demo. And the `FieldPicker` radios stay live while a merge or dismiss is in flight.
+`ResetDemoButton` (`resources/js/layouts/AppShell.tsx:96`) handles failure with `onError` on a route that has no validation, so its toast has never fired. A throttled reset drops a full-screen framework diagnostic over the demo — the exact outcome the route's own throttle comment says it's trying to avoid.
 
 ## Status
-Not Started
+In Progress
 
 ## Goals
 
 - A failed demo reset toasts and keeps the user where they are, instead of Inertia's error page. A 429 (the realistic case) is the one to verify.
-- The `FieldPicker` radios disable while a merge or dismiss is in flight, matching every other control on the screen.
 
 ## Notes
 
 - **`onError` is dead code at `AppShell.tsx:96`.** Same bug just fixed in `handleDismiss`: `onError` fires only for validation errors on otherwise-successful visits. `DemoResetController` aborts 404 (flag off), 429s (throttled), or redirects — never validation. Replace with `onHttpException`/`onNetworkError` returning `false`, exactly as `handleDismiss` now does.
-- **The 429 is why this matters.** `routes/web.php` throttles the route at 15/min and its comment says the limit is loose on purpose because "the person most likely to hit the limit is whoever is driving a live demo, and a rate-limit error mid-demo is worse than the load it would have prevented." Today a 429 does exactly that — bounces to the error page. Force it by clicking the button 16 times.
+- **The 429 is why this matters.** `routes/web.php` throttles the route at 15/min and its comment says the limit is loose on purpose because "the person most likely to hit the limit is whoever is driving a live demo, and a rate-limit error mid-demo is worse than the load it would have prevented." Today a 429 does exactly that.
+- **Observed, not assumed** (A/B'd in the browser against an intercepted 429): the old code shows *no toast at all* — silent — and Inertia covers the screen with a modal reading "All Inertia requests must receive a valid Inertia response, however a plain JSON response was received. {"message":"Too Many Attempts."}". There is **no navigation**; an earlier draft of this spec wrongly said "bounces to an error page". It's a modal overlay, and the content is a framework diagnostic — worse for a live demo than a wrong page would be.
+- Verifying via the `demo.reset_enabled` flag doesn't work: laravel-vite-plugin watches `.env` and restarts on change, so the page reloads and the button correctly disappears before it can be clicked. Intercept the response instead.
 - The reset button's in-flight state is already correct (`resetting` + `onFinish`); only the error handling is wrong. Don't rewrite what works.
-- `FieldPicker` has no `disabled` prop today — it needs one plumbed from `merge-review.tsx`, gated on `committing || dismissing`.
-- **The picker fix is tidiness, not a bug.** `handleMerge` passes `picks` to `commitMerge()` at click time, so a radio clicked mid-flight cannot change what commits. Nothing is at risk; the controls are just inconsistent.
-- The three client→server actions are merge (`lib/merge.ts`), dismiss, and reset — a full sweep of `resources/js` found no `useForm`, no `<Form>`, no other `router` calls. After this, all three handle failure correctly.
+- Reset is destructive and slow (~2.3s of database work). Unlike dismiss, a failed reset may have *partially* run, so the copy shouldn't promise nothing happened — keep it to "could not be reset."
+- The three client→server actions are merge (`lib/merge.ts`), dismiss, and reset — a full sweep of `resources/js` found no `useForm`, no `<Form>`, no other `router` calls. This is the last of the three.
 - **No Pest test** — same convention as the last two: the UI is prototype-grade, verified in the browser.
+
+## Next up (separate branch)
+
+`FieldPicker` radios stay live while a merge or dismiss is in flight — every other control on the screen disables. Needs a `disabled` prop plumbed from `merge-review.tsx`, gated on `committing || dismissing`. **Tidiness, not a bug:** `handleMerge` passes `picks` to `commitMerge()` at click time, so a radio clicked mid-flight cannot change what commits.
 
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
