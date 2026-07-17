@@ -4,6 +4,8 @@ A proactive data-trust layer for agentic CRM. Detect is a multi-signal weighted 
 
 🔗 [Live demo:](https://givebutter-detect-production-klgyoq.laravel.cloud/) Merge Jennifer + Jen and watch `contact_since` correct itself.
 
+https://github.com/user-attachments/assets/7c2e6dd5-cecc-4fd4-ba12-36721fd48be6
+
 ## The pitch: Detect, Score, Gate
 
 When agents act on CRM records, the bar for trusting that data goes way up. This prototype builds the first pillar.
