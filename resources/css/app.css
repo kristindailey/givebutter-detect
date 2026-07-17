@@ -154,25 +154,3 @@
         @apply bg-background text-foreground;
     }
 }
-
-/* The Merge Review payoff: when the before/after preview resolves, the changed
-   `contact_since` after-value flashes brand yellow → cream → transparent. Keyed
-   off a remount in BeforeAfterPanel so it replays on every fresh preview. */
-@keyframes value-flash {
-    0% {
-        background-color: var(--color-brand-yellow);
-        color: var(--color-brand-black);
-    }
-    55% {
-        background-color: var(--color-brand-cream);
-    }
-    100% {
-        background-color: transparent;
-    }
-}
-
-@layer components {
-    .animate-value-flash {
-        animation: value-flash 1.4s ease-out;
-    }
-}

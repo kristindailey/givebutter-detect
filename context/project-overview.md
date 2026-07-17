@@ -466,15 +466,15 @@ Ranked list of candidate pairs. Each row: both names, confidence score, and a co
 │  phones       (555)…          →  union: both kept (read-only)  │
 ├───────────────────────────────┴──────────────────────────────┤
 │  BEFORE → AFTER (recomputed from transactions)                 │
-│  contact_since        2021-06-02  →  2019-03-14  ⚡ highlighted │
+│  contact_since        2021-06-02  →  2019-03-14  ← corrected   │
 │  total_contributions  $1,200.00   →  $1,700.00                 │
 │  last_donation_amount $50.00      →  $50.00                    │
 │                    [ Not a duplicate ]   [ Cancel ] [ Merge ]   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### The one micro-interaction worth polishing
-When the before/after panel loads, **flash/animate the `contact_since` value correcting itself** (color highlight on the changed value). That single moment sells the entire pitch — everything else stays plain.
+### The before/after payoff
+When the before/after panel loads, the changed derived values render in brand blue against the struck-through before-value.
 
 ### Design principles
 - Credible, not custom. A clean prototype reads as honest.
@@ -595,7 +595,7 @@ givebutter-detect/
 9. [x] `MergeService` — shared preview/commit projection + recompute rules
 10. [x] Inertia props for Review Queue + Merge Review reads; JSON API routes for `GET /api/contacts/merge-preview` + `POST /api/contacts/merge`
 11. [x] Review Queue screen
-12. [x] Merge Review screen + before/after panel + `contact_since` highlight
+12. [x] Merge Review screen + before/after panel (changed derived values in brand blue)
 13. [x] Givebutter brand theming (wire the brand tokens — colors + fonts — into the `@theme` block in `resources/css/app.css`)
 14. [x] Tests: scoring + recompute on the two hero cases
 15. [ ] *(optional / stretch, only if core is done)* `artisan seed:bulk` + capture `EXPLAIN ANALYZE` artifact

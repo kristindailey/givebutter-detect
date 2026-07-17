@@ -16,7 +16,7 @@ The single-screen merge experience: side-by-side diff, per-field primary picker 
 │  phones       (555)…          →  union: both kept (read-only)│
 ├───────────────────────────────┴──────────────────────────────┤
 │  BEFORE → AFTER (recomputed from transactions)               │
-│  contact_since        2021-06-02  →  2019-03-14 ⚡ highlighted│
+│  contact_since        2021-06-02  →  2019-03-14 ← corrected  │
 │  total_contributions  $1,200.00   →  $1,700.00               │
 │  last_donation_amount $50.00      →  $50.00                  │
 │                    [ Not a duplicate ]   [ Cancel ] [ Merge ]│
@@ -43,7 +43,7 @@ The single-screen merge experience: side-by-side diff, per-field primary picker 
 ### Before/After panel (the payoff)
 
 - Renders the projection's `derived` before/after for `contact_since`, `total_contributions`, `last_donation_amount`.
-- **Micro-interaction:** when the preview resolves, a **CSS keyframe flash** (brand cream/yellow) plays on the changed `contact_since` after-value, settling to normal. Pure CSS, no library. This is the one moment to polish; everything else stays plain.
+- **Changed after-values render in brand blue** against the struck-through before-value.
 
 ### Outcomes
 
@@ -56,25 +56,23 @@ The single-screen merge experience: side-by-side diff, per-field primary picker 
 1. `resources/js/Pages/MergeReview.tsx` — page composition + fetch/commit logic
 2. `resources/js/components/FieldPicker.tsx` — conflict-only scalar picker
 3. `resources/js/components/ArrayUnionSummary.tsx` — read-only "both kept"
-4. `resources/js/components/BeforeAfterPanel.tsx` — derived diff + `contact_since` flash animation
+4. `resources/js/components/BeforeAfterPanel.tsx` — derived diff (changed after-values in brand blue)
 5. `resources/js/components/SurvivorToggle.tsx` — header override dropdown
 6. `app/Http/Controllers/ContactController.php` — Inertia prop with both full contact records (or fold into DuplicateController)
 7. `routes/web.php` — the merge-review page route
-8. CSS keyframes for the highlight flash (Tailwind config or a scoped class)
 
 ## Key Gotchas
 
 - Only **conflicting** scalars get a picker — compute conflicts from the projection's `scalars` (each carries `conflict: bool`); hide identical fields.
 - Commit sends **picks**; the server still defaults unspecified fields to survivor — don't rely on the client sending all.
-- The flash must fire on **preview data arrival**, not page mount (data is async) — key the animation off the resolved preview state.
 - Wait for the merge POST before toasting (no optimistic UI) — merge is destructive/high-trust.
 - Case 2 (parent/child) never reaches this screen via the queue (below band); it's not a merge-review path.
 
 ## Testing (folded in)
 
-No UI tests per the overview. Manual: open Jennifer/Jen → before/after shows `contact_since` flashing 2021-06-02 → 2019-03-14, total $1,200 → $1,700; Merge toasts and the pair leaves the queue; re-run via `seed:demo`.
+No UI tests per the overview. Manual: open Jennifer/Jen → before/after shows `contact_since` correcting 2021-06-02 → 2019-03-14 (in brand blue), total $1,200 → $1,700; Merge toasts and the pair leaves the queue; re-run via `seed:demo`.
 
 ## References
 
-- `givebutter/project-overview.md` → Features (B. Merge Review, C. Safe Commit), UI/UX (Screen 2, micro-interaction), API Surface
+- `givebutter/project-overview.md` → Features (B. Merge Review, C. Safe Commit), UI/UX (Screen 2), API Surface
 - Depends on: `merge-service-spec.md`, `merge-api-spec.md`, `review-queue-spec.md` (AppShell), `foundation-spec.md`

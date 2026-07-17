@@ -57,7 +57,6 @@ export default function MergeReview({
     const [picks, setPicks] = useState<Picks>({});
     const [committing, setCommitting] = useState(false);
     const [dismissing, setDismissing] = useState(false);
-    const [flashKey, setFlashKey] = useState(0);
 
     const survivor = useMemo(
         () => contacts.find((contact) => contact.id === survivorId),
@@ -84,7 +83,6 @@ export default function MergeReview({
             .then((data) => {
                 setProjection(data);
                 setLoading(false);
-                setFlashKey((key) => key + 1);
             })
             .catch(() => {
                 // An aborted request is expected on a rapid survivor flip — the
@@ -255,7 +253,6 @@ export default function MergeReview({
                         <BeforeAfterPanel
                             derived={projection?.derived ?? null}
                             loading={loading}
-                            flashKey={flashKey}
                         />
                     </Panel>
                 </div>
