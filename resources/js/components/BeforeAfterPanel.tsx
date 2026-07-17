@@ -6,14 +6,12 @@ import type { ProjectionDerived } from '@/lib/merge';
 import { cn } from '@/lib/utils';
 
 // The demo payoff: the three derived fields recomputed from the post-repoint
-// union of transactions, shown before → after. When the preview resolves, the
-// changed `contact_since` after-value flashes (see .animate-value-flash). The
-// flash is keyed off `flashKey` so a remount replays it on every fresh preview.
+// union of transactions, shown before → after. Changed after-values render in
+// brand blue so the correction reads at a glance.
 
 interface BeforeAfterPanelProps {
     derived: ProjectionDerived | null;
     loading: boolean;
-    flashKey: number;
 }
 
 type Formatter = (value: string | null) => string;
@@ -22,7 +20,6 @@ interface Row {
     key: keyof ProjectionDerived;
     label: string;
     format: Formatter;
-    flashOnChange: boolean;
 }
 
 const ROWS: Row[] = [
@@ -30,19 +27,16 @@ const ROWS: Row[] = [
         key: 'contact_since',
         label: 'Contact since',
         format: formatDate,
-        flashOnChange: true,
     },
     {
         key: 'total_contributions',
         label: 'Total contributions',
         format: formatMoney,
-        flashOnChange: false,
     },
     {
         key: 'last_donation_amount',
         label: 'Last donation',
         format: formatMoney,
-        flashOnChange: false,
     },
 ];
 
@@ -65,11 +59,7 @@ function LoadingRows() {
     );
 }
 
-export function BeforeAfterPanel({
-    derived,
-    loading,
-    flashKey,
-}: BeforeAfterPanelProps) {
+export function BeforeAfterPanel({ derived, loading }: BeforeAfterPanelProps) {
     if (loading || derived === null) {
         return <LoadingRows />;
     }
@@ -79,7 +69,6 @@ export function BeforeAfterPanel({
             {ROWS.map((row) => {
                 const field = derived[row.key];
                 const changed = field.before !== field.after;
-                const shouldFlash = row.flashOnChange && changed;
 
                 return (
                     <Fragment key={row.key}>
@@ -91,12 +80,9 @@ export function BeforeAfterPanel({
                         </span>
                         <ArrowRight className="size-4 text-muted-foreground" />
                         <span
-                            // Remount on each fresh preview so the flash replays.
-                            key={shouldFlash ? flashKey : undefined}
                             className={cn(
                                 'rounded-md px-1.5 py-0.5 text-right text-sm font-semibold text-brand-black tabular-nums',
                                 changed && 'text-brand-blue',
-                                shouldFlash && 'animate-value-flash',
                             )}
                         >
                             {row.format(field.after)}
