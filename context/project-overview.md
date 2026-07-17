@@ -25,7 +25,7 @@ A proactive data-trust layer for agentic CRM. This prototype builds **Detect**: 
 
 ## 🎯 Problem Statement
 
-Givebutter is shipping **agentic CRM**. Agents that *act* on records — not just read them — require a higher data-trust bar than the current CRM was designed for. Reactive fixes to data-trust bugs — like a household-email mis-merge, where a naive exact-match rule collapses two different people who share an inbox — are the failure mode. The opportunity is a **proactive trust layer** that sits *before* agents ship.
+Givebutter is shipping **agentic CRM**. Agents that *act* on records — not just read them — require a higher data-trust bar than the current CRM was designed for. Reactive fixes to data-trust bugs — like a household-email mis-merge, where a naive exact-match rule proposes collapsing two different people who share an inbox, and a reviewer with no reason to doubt it clicks Merge — are the failure mode. The opportunity is a **proactive trust layer** that sits *before* agents ship.
 
 **Pitch through-line: _Detect → Score → Gate._**
 
@@ -33,9 +33,9 @@ Givebutter is shipping **agentic CRM**. Agents that *act* on records — not jus
 | ------ | ---------- | -------- |
 | **Detect** | Smarter duplicate detection + safe merge | ✅ **This prototype** |
 | **Score** | Per-contact Trust Score | Deck only |
-| **Gate** | Agent pre-flight check before mutations | Deck only |
+| **Gate** | Agent pre-flight check before an action commits | Deck only |
 
-**A telling gap:** Givebutter's public API has endpoints to create, update, archive, restore, and household-link contacts — but **no merge endpoint exists** (verified against `docs.givebutter.com`). Merge is a destructive, high-trust operation that today happens only in the UI with a naive rule. That's exactly the gap a trust layer should own. This prototype builds the matcher *and* the review gate that should sit on top of the existing dedupe.
+**A telling gap:** Givebutter's API has endpoints to create, update, archive, restore, and household-link contacts — but **no merge action exists** (verified against `docs.givebutter.com`). Actions are a pattern the API already uses: `PATCH /v1/contacts/{contact}/restore`, plus `POST /v1/contacts/{contact}/tags/add`, `/tags/remove`, and `/tags/sync` — non-CRUD operations hanging off the contact with the verb in the path. Merge belongs in that list and isn't in it; it's a destructive, high-trust operation that today happens only in the UI, on pairs a naive rule proposed. That's exactly the gap a trust layer should own. This prototype builds the matcher *and* the review gate that should sit on top of the existing dedupe.
 
 **One-liner:** A multi-signal weighted matcher with a merge preview that shows how giving history will change before anything commits.
 
@@ -106,7 +106,7 @@ The deck's claim — *Givebutter's schema already stores **6 identity signals***
 | Segment recomputation after merge | Out of the trust-critical path |
 | Tag-union diffing UI | Tags auto-union silently; not a decision surface |
 | Activity-feed merge | Not trust-critical for the demo |
-| Rollback / undo feature | Soft-delete (not hard delete) makes merges *reversible by nature* without building undo |
+| Rollback / undo feature | The loser is soft-deleted rather than destroyed, but the commit re-points transactions and overwrites survivor scalars in place without logging what moved — a real un-merge needs that audit trail, which is the actual cost and is out of weekend scope |
 | Transitive clustering | Candidates are strictly **pairwise** (A≈B and B≈C → two independent queue items, not a 3-way cluster); connected-component clustering deferred |
 | Block-size cap / degenerate-value guards | Documented in the algorithm, not implemented — the synthetic seed doesn't trigger them |
 | Company-contact merges | Givebutter doesn't support merging these either |
@@ -254,14 +254,14 @@ erDiagram
 ### Field mirroring notes (from the real API)
 
 - `stats` in the API only carries `total_contributions` and `recurring_contributions` (both strings) — there is **no donation count**. We store `total_contributions` as a derived numeric.
-- `contact_since` and `last_donation_amount` are top-level on the contact and are **derived** in this prototype (recomputed from transactions), not free-text.
+- `contact_since` and `last_donation_amount` are top-level on the contact. The real API treats `contact_since` as **writable** — it's an accepted `PUT /v1/contacts/{contact}` body field, settable to any date with nothing recomputing it. This prototype treats both as **derived** (recomputed from transactions), never free-text. The divergence is deliberate: it's the trust gap the pitch names.
 - `emails[]` / `phones[]` are `{type, value}` only. The `normalized_value` column alongside each is ours, not the API's — it's what the exact-match blocks self-join on.
 - `contacts.name_key` / `contacts.address_key` are likewise prototype-only: precomputed normalized blocking keys, written by the Normalizer during seeding and `detect:run`. Keeping `address_key` on `contacts` (derived from the primary address) means both fuzzy blocks index one table.
 - `tags` are a flat array of strings (max 64 chars each) on the create/update request; the API exposes dedicated add/remove/sync endpoints. Normalized here to `tags` + `contact_tags` so the merge can auto-union them. **Never matched on and never diffed** — they exist only to survive a merge.
 - `AddressResource` fields: `address_1`, `address_2`, `city`, `state`, `zipcode`, `country`, `type`, `is_primary`.
 - Households use `head_contact_id` to mark the head; there is **no per-member relationship label** in the real schema, so the modifier keys off co-membership + head designation, not an invented role.
 - `TRANSACTION.captured_at` (not `created_at`) is the settlement timestamp used for `contact_since`; `refunded_at` / `status` drive the recompute filter.
-- The public contact API exposes **`DELETE` + `restore`** (a reversible **soft-delete**) and **no merge endpoint** — verified against `docs.givebutter.com`. The merge loser is modeled as a soft-delete (internal `archived_at`) to mirror those reversible semantics; **merge is the trust-critical primitive the public API doesn't yet own.**
+- The contact API exposes **`DELETE` + `PATCH /restore`** (a reversible **soft-delete** — `ContactResource` carries `archived_at`, and there is no `deleted_at`) and **no merge action** — verified against `docs.givebutter.com`. The merge loser is modeled as a soft-delete (internal `archived_at`, mirroring the API's own field name) rather than a hard delete, matching how the API treats a removed contact; **merge is the trust-critical primitive the API doesn't yet own.**
 
 ### `duplicate_candidates` (prototype-only)
 Precomputed by the `detect:run` artisan command. `signal_breakdown` is JSON: per-signal score contribution + the matched values, so the UI can render *why* without recomputing.
@@ -316,7 +316,7 @@ The GIN trigram index + `%` operator is what keeps the fuzzy blocks sub-quadrati
 Shared household membership is **double-edged**, and handling it correctly is the entire pitch:
 
 - In the **Jennifer/Jen** case, shared household membership is *evidence they're the same person*.
-- In the **parent/child** case, a shared household **email** is exactly what makes the naive rule *wrongly* merge two different people.
+- In the **parent/child** case, a shared household **email** is exactly what makes the naive rule *wrongly* propose merging two different people.
 
 So household is modeled as an **asymmetric context modifier**, not an additive signal:
 
@@ -346,7 +346,7 @@ Match confidence is **not** the Trust Score, and the bands are not a duplicate o
 
 - **Match confidence** grades a **pair** ("are these the same person?"). The Trust Score grades a **single record** ("is this record safe for an agent to act on?").
 - The two are connected one-way: an unresolved high-confidence duplicate is an **input that lowers** a contact's Trust Score — a record that might be two people is inherently less safe to act on. Detect *feeds* Score; it doesn't replace it.
-- The **auto-merge band is exactly where Gate sits**: even a ≥90 match shouldn't merge autonomously unless Gate's pre-flight check (which reads the Trust Score) clears it. Three gates, three units — pair (Detect), record (Score), action (Gate).
+- The **auto-merge band is exactly where Gate sits**: even a ≥90 match shouldn't merge autonomously unless Gate's pre-flight check clears it. Gate reads two inputs: the trust score (is this record safe to act on?) and the action's consent status (is this send permitted?). Only the first needs building: consent is already published on the contact resource (`is_email_subscribed`, `email_opt_in`, `address_unsubscribed_at`, …) and simply isn't consulted. Three gates, three units: pair (Detect), record (Score), action (Gate).
 
 ---
 
@@ -493,8 +493,8 @@ Two **tiers**:
 ### Hero case 1 — Jennifer / Jen (naive rule misses → we catch)
 "Jennifer Smith" (work email) and "Jen Smith" (personal email), same household, same `dob`. The naive rule keeps them separate (different emails, different first name). The prototype matches them: fuzzy preferred-name + shared household + `dob` agreement. **Seed Jen with an earlier transaction** so the merge visibly corrects `contact_since` backward — the demo moment. **Seed one refunded transaction** on one of them so `total_contributions` proves the refund-exclusion rule.
 
-### Hero case 2 — Parent / child shared household email (naive rule over-merges → we don't)
-Parent and child share a household email and surname and address. A naive exact-match rule **wrongly merges them**. The prototype keeps them apart: the household modifier **dampens** the shared-email signal, and **conflicting `dob`** pushes toward "different people."
+### Hero case 2 — Parent / child shared household email (naive rule flags them → we don't)
+Parent and child share a household email and surname and address. Givebutter's duplicate scan matches on primary email regardless of names, so it **wrongly proposes merging them** — and nothing in its compare view gives the reviewer a reason to hesitate. The prototype keeps them apart: the household modifier **dampens** the shared-email signal, and **conflicting `dob`** pushes toward "different people."
 
 Both cases must show the before/after panel behaving correctly: case 1 merges and recomputes; case 2 scores low / is not proposed as a confident merge.
 

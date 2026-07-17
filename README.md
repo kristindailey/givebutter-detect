@@ -10,23 +10,30 @@ When agents act on CRM records, the bar for trusting that data goes way up. This
 
 - **Detect** (this repo): smarter duplicate detection plus a safe, reviewable merge.
 - **Score** (deck only): a per-contact trust score.
-- **Gate** (deck only): an agent pre-flight check before mutations.
+- **Gate** (deck only): an agent pre-flight check before an action commits.
 
-Givebutter's public API can create, update, archive, restore, and household-link contacts, but it has no merge endpoint. Merge is the destructive, high-trust operation a trust layer should own. This prototype builds the matcher and the review gate that sit on top of Givebutter's existing dedupe.
+Givebutter's API can create, update, archive, restore, and household-link contacts, but it has no merge action. Actions are a pattern it already uses: `PATCH /v1/contacts/{contact}/restore`, `POST /v1/contacts/{contact}/tags/add`, `.../tags/remove`, `.../tags/sync`, non-CRUD operations that hang off the contact with the verb in the path. Merge belongs in that list. 
+
+Merge is the destructive, high-trust operation a trust layer should own. This prototype builds the matcher and the review gate that sit on top of Givebutter's existing dedupe.
 
 ## The two hero cases
 
-Givebutter runs two contradictory matching rules. A strict import rule requires a name match, so it splits real duplicates. A loose daily scan ignores names, so it merges different people. The demo proves the prototype beats both rules, in both directions.
+Givebutter matches contacts two different ways and the two disagree. Import dedupe needs a name match *plus* a matching primary email or phone, so it creates real duplicates instead of catching them. The duplicate scan ignores names and matches on primary email or phone alone, so it proposes merging different people. 
+
+Neither reads secondary contact info. Both land in a review queue. So the prototype's edge isn't the review step, it's which pairs reach it and what the reviewer is told. The demo proves it in both directions.
 
 1. **Jennifer / Jen** (naive rule misses, Detect catches). Same person, different first name and different emails. Matched via fuzzy preferred-name, shared household, and `dob` agreement. Scores ~94, merges, and drags `contact_since` backward.
-2. **Parent / child** (naive rule over-merges, Detect keeps them apart). Different people sharing a household email, surname, and address. The household modifier dampens the shared-email signal and a conflicting `dob` pushes them apart. Scores ~35, never surfaced.
+2. **Parent / child** (naive rule flags them, Detect keeps them apart). Different people sharing a household email, surname, and address. The household modifier dampens the shared-email signal and a conflicting `dob` pushes them apart. Scores ~35, never surfaced.
 
 ## How it works
 
 - **Blocking, not O(n squared).** Candidate pairs are generated only from cheap shared keys (exact email/phone, trigram name/address, same household), backed by `pg_trgm` GIN indexes.
 - **Weighted scoring.** Each pair gets a 0-100 confidence score with a per-signal `signal_breakdown` so the UI shows why it fired. Weights are hand-tuned for the demo; in production they would be learned from confirmed-merge history.
 - **Household modifier.** Shared household is an asymmetric context modifier, not an additive signal: it dampens a shared email inside a family, boosts on matching identity markers, and pushes apart on a `dob` conflict.
-- **Safe merge.** One `MergeService::project()` backs both the dry-run preview and the commit. On commit, inside one DB transaction, the loser is soft-deleted, its transactions re-point to the survivor, and three derived fields recompute from the source-of-truth transactions: `total_contributions`, `contact_since`, `last_donation_amount`.
+- **Safe merge.** One `MergeService::project()` backs both the dry-run preview and the commit. On commit, inside one DB transaction, the loser is soft-deleted, its transactions re-point to the survivor, and three derived fields recompute from the source-of-truth transactions: `total_contributions`, `contact_since`, `last_donation_amount`. Three things it does differently from the merge that ships today:
+  - **Recomputes instead of trusting.** The real API accepts `contact_since` as a `PUT` body field, so a donor's tenure is currently whatever the last writer said it was.
+  - **Picks per field, not per record.** Givebutter's merge selects one primary record wholesale. This one surfaces only the fields that actually conflict.
+  - **Archives rather than destroys.** Givebutter's merge deletes the secondary's name, birthday, and custom fields outright and warns, "You won't be able to undo this action." Here the loser is soft-deleted, so the record itself survives. That's short of an undo. See [Scope](#scope).
 
 ## Tech stack
 
@@ -97,7 +104,7 @@ Read screens ride Inertia props. Only the two merge actions are JSON API routes 
 Weekend-scoped. Each cut is a decision, not a gap.
 
 - **In:** four primary signals (cross-field email, cross-field phone, fuzzy preferred-name, address trigram) plus the household modifier; safe merge with derived-field recompute.
-- **Out (deliberate):** external-ID matching (the weekend cut line), custom-fields matching, segment recomputation, transitive clustering, rollback (soft-delete makes merges reversible by nature), and real auth.
+- **Out (deliberate):** external-ID matching (the weekend cut line), custom-fields matching, segment recomputation, transitive clustering, undo (The loser is archived rather than destroyed, but the commit doesn't log what moved. A real un-merge needs that audit trail, not just a button.), and real auth.
 
 ## Testing
 
