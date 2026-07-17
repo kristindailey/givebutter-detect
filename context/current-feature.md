@@ -14,10 +14,6 @@ Not Started
 
 <!-- Additional context, constraints, or details from spec -->
 
-## Next up (separate branch)
-
-`FieldPicker` radios stay live while a merge or dismiss is in flight — every other control on the screen disables. Needs a `disabled` prop plumbed from `merge-review.tsx`, gated on `committing || dismissing`. **Tidiness, not a bug:** `handleMerge` passes `picks` to `commitMerge()` at click time, so a radio clicked mid-flight cannot change what commits.
-
 ## History
 <!-- Title of feature/fix and brief description of feature/fix -->
 
@@ -46,7 +42,7 @@ Two JSON routes sharing `project()` (dry-run `GET merge-preview`, committing `PO
 Ranked pending pairs (score ≥ review band) as an Inertia prop inside a shared Givebutter `AppShell`, with band badges and why-chips read straight from `signal_breakdown`. Rows link to a stubbed Merge Review route.
 
 ### Merge Review — Screen 2
-The single-screen merge over the shared `project()` projection: conflict-only picker, read-only array union, and the before/after panel that flashes `contact_since` correcting itself.
+The single-screen merge over the shared `project()` projection: conflict-only picker, read-only array union, and the before/after panel.
 
 ### Merge Guard — Pending Candidate + Archived Rejection
 The commit route would merge any two individual contacts: a null candidate skipped the resolved-pair guard (`$candidate !== null && …`), and nothing rejected a contact a previous merge had archived. Now 404 on an undetected pair, 422 on an archived one, and the client toasts which guard fired. Both guards are needed — pairs are pairwise, so B≈C stays pending after A≈B archives B, and only validation catches a survivor override onto B.
@@ -74,3 +70,6 @@ The same dead `onError` in the demo reset button, where a 429 is the realistic f
 
 ### FieldPicker In-Flight State
 The picker's choice cards stayed live while a merge or dismiss was underway, alone among the screen's controls. Cosmetic only — `picks` is captured at click time, so a card pressed mid-request could never have changed what commits. The hover class is dropped while disabled rather than overridden, since a `disabled:hover:` rule would have to name the idle background and would lie the day it changed. Every control on Merge Review now gates on the in-flight state except Cancel and Back to queue, which stay live on purpose.
+
+### Remove the contact_since Flash Animation
+Deleted the yellow→cream keyframe that flashed the corrected `contact_since` on each fresh preview, plus its dead plumbing (`flashKey`, `flashOnChange`/`shouldFlash`, the `value-flash` keyframe + class). The changed after-values still read in brand blue.
