@@ -407,7 +407,7 @@ The app shell uses **Inertia + React** (Laravel serves the React pages over the 
 
 | Category | Technology | Notes |
 | -------- | ---------- | ----- |
-| **App shell** | Laravel + Inertia 2 | Shared session, no CORS; official React starter kit |
+| **App shell** | Laravel + Inertia 3 | Shared session, no CORS; official React starter kit |
 | **Frontend** | TypeScript, React 19, Vite | Inertia pages + `fetch` to the JSON API |
 | **Backend** | PHP, Laravel | Mirrors Givebutter's real stack |
 | **Database** | PostgreSQL | Chosen for `pg_trgm` trigram indexing — clean SQL story for fuzzy matching |

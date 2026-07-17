@@ -6,7 +6,7 @@ Stand up the whole stack end-to-end before any feature code: Laravel + Inertia +
 
 ## Requirements
 
-- Scaffold with the **official Laravel React starter kit** (run `laravel new`, select the **React** kit with **built-in auth — not WorkOS**) to get Inertia 2 + React 19 + TS + Tailwind v4 + shadcn/ui + Vite in one command. (Laravel Breeze is frozen as of Laravel 12 and is no longer the recommended path.)
+- Scaffold with the **official Laravel React starter kit** (run `laravel new`, select the **React** kit with **built-in auth — not WorkOS**) to get Inertia 3 + React 19 + TS + Tailwind v4 + shadcn/ui + Vite in one command. (Laravel Breeze is frozen as of Laravel 12 and is no longer the recommended path.)
 - **Strip the starter-kit auth** down to a stubbed demo admin (see AutoLoginDemoAdmin below) — no login/register screens. Auth is driven by **Laravel Fortify**; disable its features in `config/fortify.php` and drop the shipped auth routes/pages.
 - **PostgreSQL via Docker Compose** — a single `docker-compose.yml` running Postgres 16 on `:5432`. No Sail.
 - Enable `pg_trgm` via a migration (`CREATE EXTENSION IF NOT EXISTS pg_trgm`), not a manual step, so `migrate:fresh` is self-contained.

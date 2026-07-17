@@ -33,7 +33,7 @@ Neither reads secondary contact info. Both land in a review queue. So the protot
 - **Safe merge.** One `MergeService::project()` backs both the dry-run preview and the commit. On commit, inside one DB transaction, the loser is soft-deleted, its transactions re-point to the survivor, and three derived fields recompute from the source-of-truth transactions: `total_contributions`, `contact_since`, `last_donation_amount`. Three things it does differently from the merge that ships today:
   - **Recomputes instead of trusting.** The real API accepts `contact_since` as a `PUT` body field, so a donor's tenure is currently whatever the last writer said it was.
   - **Picks per field, not per record.** Givebutter's merge selects one primary record wholesale. This one surfaces only the fields that actually conflict.
-  - **Archives rather than destroys.** Givebutter's merge deletes the secondary's name, birthday, and custom fields outright and warns, "You won't be able to undo this action." Here the loser is soft-deleted, so the record itself survives. That's short of an undo. See [Scope](#scope).
+  - **Archives rather than destroys.** Givebutter's merge removes the secondary's name, custom fields, and its birthday when it differs from the primary, warning, "You won't be able to undo this action." Here the loser is soft-deleted, so the record itself survives. That's short of an undo. See [Scope](#scope).
 
 ## Tech stack
 
@@ -117,7 +117,7 @@ php artisan test --compact
 ## Project structure
 
 ```
-app/Services/Detection/        Normalizer, CandidateGenerator, PairScorer
+app/Services/Detection/        Normalizer, CandidateGenerator, PairScorer, TrigramSimilarity
 app/Services/MergeService.php  shared preview/commit projection
 app/Console/Commands/          detect:run, seed:demo
 database/seeders/              DemoSeeder (~2k contacts + hero cases)
