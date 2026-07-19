@@ -126,3 +126,7 @@ database/seeders/              DemoSeeder (~2k contacts + hero cases)
 resources/js/pages/            review-queue.tsx, merge-review.tsx
 tests/                         scoring + recompute on the two hero cases
 ```
+
+---
+
+*This is an independent prototype. It is not built by, endorsed by, or affiliated with Givebutter in any way.*
